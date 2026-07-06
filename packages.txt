@@ -20,6 +20,7 @@ rhythmbox-plugin-tray-icon
 sfml2
 snapper-rollback
 teamviewer
+ventoy
 xclicker
 xmousepasteblock
 zalo-for-linux-bin
