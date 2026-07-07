@@ -46,28 +46,34 @@ jobs:
       - name: Fix workspace ownership for build user
         run: chown -R builder:builder "$GITHUB_WORKSPACE"
 
+      - name: Detect changed directories
+        id: changed-files
+        uses: tj-actions/changed-files@v47.0.6
+        with:
+          dir_names: 'true'
+          dir_names_max_depth: '1'
+          dir_names_exclude_current_dir: 'true'
+          files: |
+            */**
+            !.github/**
+
       - name: Detect changed package directories
         id: changed
         shell: bash
         run: |
           set -euo pipefail
-          base_ref='${{ github.event.pull_request.base.sha }}'
-          head_ref='${{ github.event.pull_request.head.sha }}'
-
-          mapfile -t changed_files < <(git diff --name-only --diff-filter=AM "$base_ref" "$head_ref")
 
           declare -A seen=()
           changed_dirs=()
 
-          for path in "${changed_files[@]}"; do
-            [[ -z "$path" ]] && continue
-            topdir="${path%%/*}"
-            [[ "$topdir" == "$path" ]] && continue
-            [[ "$topdir" == ".github" ]] && continue
-            [[ -f "$topdir/PKGBUILD" ]] || continue
-            if [[ -z "${seen[$topdir]:-}" ]]; then
-              seen[$topdir]=1
-              changed_dirs+=("$topdir")
+          for dir in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            [[ -z "$dir" ]] && continue
+            [[ "$dir" == ".github" ]] && continue
+            [[ -d "$dir" ]] || continue
+            [[ -f "$dir/PKGBUILD" ]] || continue
+            if [[ -z "${seen[$dir]:-}" ]]; then
+              seen[$dir]=1
+              changed_dirs+=("$dir")
             fi
           done
 
@@ -79,7 +85,7 @@ jobs:
             exit 0
           fi
 
-          printf 'packages=%s' "${changed_dirs[*]}" >> "$GITHUB_OUTPUT"
+          printf 'packages=%s\n' "${changed_dirs[*]}" >> "$GITHUB_OUTPUT"
           echo "has_changes=true" >> "$GITHUB_OUTPUT"
           echo "### Changed packages" >> "$GITHUB_STEP_SUMMARY"
           for pkg in "${changed_dirs[@]}"; do
