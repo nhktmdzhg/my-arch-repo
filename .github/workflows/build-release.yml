@@ -183,5 +183,35 @@ jobs:
           echo "Uploading current assets."
           gh release upload "$TAG" output/* --repo "$REPO" --clobber
 
-          gh release edit "$TAG" --repo "$REPO" \
-            --notes "Last updated: $(date -u '+%Y-%m-%d %H:%M UTC'). Built: ${{ steps.build.outputs.built }}. Skipped: ${{ steps.build.outputs.skipped }}"
+          FORMATTED_BUILT=""
+          for p in ${{ steps.build.outputs.built }}; do FORMATTED_BUILT+=$'\n'"- 🟢 $p"; done
+          [[ -z "$FORMATTED_BUILT" ]] && FORMATTED_BUILT=$'\n'"- None"
+
+          FORMATTED_SKIPPED=""
+          for p in ${{ steps.build.outputs.skipped }}; do FORMATTED_SKIPPED+=$'\n'"- 🟡 $p"; done
+          [[ -z "$FORMATTED_SKIPPED" ]] && FORMATTED_SKIPPED=$'\n'"- None"
+
+          FORMATTED_FAILED=""
+          for p in ${{ steps.build.outputs.failed }}; do FORMATTED_FAILED+=$'\n'"- 🔴 $p"; done
+          [[ -z "$FORMATTED_FAILED" ]] && FORMATTED_FAILED=$'\n'"- None"
+
+          RELEASE_NOTES=$(cat <<EOF
+          ### 📦 Repository Update Summary
+
+          **Last Updated:** $(date -u '+%Y-%m-%d %H:%M UTC')
+
+          #### 🟢 Newly Built Packages
+          $FORMATTED_BUILT
+
+          #### 🟡 Cached / Skipped Packages
+          $FORMATTED_SKIPPED
+
+          #### 🔴 Failed Packages
+          $FORMATTED_FAILED
+
+          ---
+          *Automated generation by GitHub Actions.*
+          EOF
+          )
+
+          gh release edit "$TAG" --repo "$REPO" --notes "$RELEASE_NOTES"

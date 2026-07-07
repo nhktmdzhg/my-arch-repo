@@ -97,4 +97,15 @@ jobs:
           title: 'AUR sync: cập nhật và dọn dẹp source packages'
           labels: aur-sync
           body: |
-            ## không có gì hot
+            ### 🔄 AUR Synchronization Report
+
+            Hệ thống tự động đã thực hiện kiểm tra và đồng bộ hóa các gói từ AUR.
+
+            | Trạng thái | Gói phần mềm |
+            | :--- | :--- |
+            | 🟢 **Synced Successfully** | `${{ steps.sync.outputs.synced || 'none' }}` |
+            | 🔴 **Failed to Sync** | `${{ steps.sync.outputs.failed || 'none' }}` |
+            | 🧹 **Pruned / Removed** | `${{ steps.sync.outputs.removed || 'none' }}` |
+
+            ---
+            *Vui lòng kiểm tra trạng thái verify build bên dưới trước khi thực hiện merge.*

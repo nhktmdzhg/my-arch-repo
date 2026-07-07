@@ -5,7 +5,6 @@ catppuccin-whiskers-bin
 equicord-installer-bin
 icu74
 libgraph
-libnm-iwd
 lightworks
 localsend
 lua-pam-git
