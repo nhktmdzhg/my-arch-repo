@@ -32,29 +32,45 @@ jobs:
             exit 1
           fi
 
-      - name: Clone and sync each AUR package
+      - name: Sync packages and prune removed
         id: sync
         run: |
           set -uo pipefail
           mkdir -p /tmp/aur-clone
           SYNCED=()
           FAILED=()
+          REMOVED=()
+
+          mapfile -t VALID_PKGS < <(sed 's/#.*//' packages.txt | xargs -n1 | awk 'NF')
+
+          for dir in */ ; do
+            [[ -e "$dir" ]] || continue
+            dir="${dir%/}"
+            case "$dir" in
+              .github) continue ;;
+            esac
+            if ! printf '%s\n' "${VALID_PKGS[@]}" | grep -q -x "$dir"; then
+              echo "Removing obsolete package directory: $dir"
+              rm -rf "$dir"
+              REMOVED+=("$dir")
+            fi
+          done
 
           while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
             pkg="$(echo "$raw_line" | sed 's/#.*//' | xargs)"
             [[ -z "$pkg" ]] && continue
 
-            echo "=== [$pkg] cloning from AUR ==="
+            echo "Cloning $pkg from AUR"
             rm -rf "/tmp/aur-clone/$pkg"
 
             if ! git clone --depth=1 "https://aur.archlinux.org/${pkg}.git" "/tmp/aur-clone/$pkg" >/tmp/clone.log 2>&1; then
-              echo "::warning::[$pkg] clone failed, skipping"
+              echo "::warning::Clone failed for $pkg"
               cat /tmp/clone.log
               FAILED+=("$pkg")
               continue
             fi
 
-            echo "=== [$pkg] syncing files into repo ==="
+            echo "Syncing files for $pkg"
             mkdir -p "$pkg"
             find "$pkg" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
             rsync -a --exclude='.git' "/tmp/aur-clone/$pkg/" "$pkg/"
@@ -64,19 +80,21 @@ jobs:
 
           echo "synced=${SYNCED[*]}" >> "$GITHUB_OUTPUT"
           echo "failed=${FAILED[*]}" >> "$GITHUB_OUTPUT"
+          echo "removed=${REMOVED[*]}" >> "$GITHUB_OUTPUT"
 
           echo "### Sync summary" >> "$GITHUB_STEP_SUMMARY"
           echo "- Synced: ${SYNCED[*]:-none}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Failed: ${FAILED[*]:-none}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Removed: ${REMOVED[*]:-none}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create or update aggregated pull request
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: 'chore(aur-sync): sync package sources from AUR'
+          commit-message: 'chore(aur-sync): sync package sources and prune deletions'
           branch: aur-sync
           delete-branch: true
-          title: 'AUR sync: cập nhật source của tất cả các package'
+          title: 'AUR sync: cập nhật và dọn dẹp source packages'
           labels: aur-sync
           body: |
             ## không có gì hot

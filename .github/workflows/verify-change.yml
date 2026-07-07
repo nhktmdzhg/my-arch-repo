@@ -36,7 +36,6 @@ jobs:
           ' /etc/pacman.conf > "$tmp"
           cat "$tmp" > /etc/pacman.conf
           rm -f "$tmp"
-          grep -n 'DisableSandboxNetwork' /etc/pacman.conf
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -57,7 +56,7 @@ jobs:
             */**
             !.github/**
 
-      - name: Detect changed package directories
+      - name: Filter deleted or invalid packages
         id: changed
         shell: bash
         run: |
@@ -69,8 +68,17 @@ jobs:
           for dir in ${{ steps.changed-files.outputs.all_changed_files }}; do
             [[ -z "$dir" ]] && continue
             [[ "$dir" == ".github" ]] && continue
-            [[ -d "$dir" ]] || continue
-            [[ -f "$dir/PKGBUILD" ]] || continue
+            
+            if [[ ! -d "$dir" ]]; then
+              echo "Package directory $dir was fully deleted. Skipping verification."
+              continue
+            fi
+            
+            if [[ ! -f "$dir/PKGBUILD" ]]; then
+              echo "Directory $dir exists but missing PKGBUILD. Skipping."
+              continue
+            fi
+            
             if [[ -z "${seen[$dir]:-}" ]]; then
               seen[$dir]=1
               changed_dirs+=("$dir")
@@ -81,7 +89,7 @@ jobs:
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
             echo "packages=" >> "$GITHUB_OUTPUT"
             echo "### Build summary" >> "$GITHUB_STEP_SUMMARY"
-            echo "- No added or modified package directories detected." >> "$GITHUB_STEP_SUMMARY"
+            echo "- No valid packages to build or verify." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
@@ -103,12 +111,12 @@ jobs:
 
           for dir in "${packages[@]}"; do
             [[ -n "$dir" ]] || continue
-            echo "=== [$dir] building with paru -B ==="
+            echo "Building $dir with paru"
             if sudo -u builder bash -lc "cd '$GITHUB_WORKSPACE' && paru --noconfirm -B '$GITHUB_WORKSPACE/$dir'" >/tmp/build-"$dir".log 2>&1; then
               BUILT+=("$dir")
-              echo "=== [$dir] OK ==="
+              echo "Build OK: $dir"
             else
-              echo "::warning::[$dir] build failed"
+              echo "Build failed for $dir"
               tail -n 120 /tmp/build-"$dir".log || true
               FAILED+=("$dir")
             fi
@@ -120,6 +128,6 @@ jobs:
           echo "- Failed: ${FAILED[*]:-none}" >> "$GITHUB_STEP_SUMMARY"
 
           if (( ${#FAILED[@]} > 0 )); then
-            echo "::error::Some changed packages failed to build: ${FAILED[*]}"
+            echo "::error::Some packages failed to build."
             exit 1
           fi

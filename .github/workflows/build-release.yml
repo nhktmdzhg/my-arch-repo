@@ -29,7 +29,7 @@ jobs:
       - name: Install base dependencies
         run: |
           set -euo pipefail
-          pacman -Syu --noconfirm --needed git sudo rsync github-cli fakeroot binutils pacman-contrib paru
+          pacman -Syu --noconfirm --needed git subversion mercurial sudo rsync github-cli fakeroot binutils pacman-contrib paru
           id builder >/dev/null 2>&1 || useradd -m builder
           grep -q '^builder ALL=(ALL) NOPASSWD: ALL$' /etc/sudoers || echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
@@ -45,7 +45,6 @@ jobs:
           ' /etc/pacman.conf > "$tmp"
           cat "$tmp" > /etc/pacman.conf
           rm -f "$tmp"
-          grep -n 'DisableSandboxNetwork' /etc/pacman.conf
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -55,62 +54,105 @@ jobs:
       - name: Fix workspace ownership for build user
         run: chown -R builder:builder "$GITHUB_WORKSPACE"
 
-      - name: Build every package directory with paru
+      - name: Fetch existing packages to cache
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p cache output
+          echo "Downloading existing artifacts to cache/"
+          gh release download "$RELEASE_TAG" --repo "${{ github.repository }}" --dir cache --pattern "*.pkg.tar.zst" 2>/dev/null || true
+
+      - name: Build and filter current packages
         id: build
         run: |
           set -euo pipefail
-          mkdir -p output
           BUILT=()
+          SKIPPED=()
           FAILED=()
 
           for dir in */ ; do
             dir="${dir%/}"
             case "$dir" in
-              .github|output) continue ;;
+              .github|cache|output) continue ;;
             esac
             [[ -f "$dir/PKGBUILD" ]] || continue
 
+            echo "Checking status for $dir"
 
-            echo "=== [$dir] building with paru -B ==="
-            if sudo -u builder bash -lc "cd '$GITHUB_WORKSPACE' && paru --noconfirm -B '$GITHUB_WORKSPACE/$dir'" >/tmp/build-"$dir".log 2>&1; then
-              find "$dir" -maxdepth 1 -name '*.pkg.tar.zst' -exec cp -f {} output/ \;
+            if grep -q 'pkgver()' "$dir/PKGBUILD"; then
+              sudo -u builder bash -lc "cd '$GITHUB_WORKSPACE/$dir' && makepkg -od --noprepare --skipinteg" >/dev/null 2>&1 || true
+            fi
+
+            EXPECTED_PKGS=$(sudo -u builder bash -lc "cd '$GITHUB_WORKSPACE/$dir' && makepkg --packagelist 2>/dev/null" || true)
+
+            NEEDS_BUILD=false
+            if [[ -z "$EXPECTED_PKGS" ]]; then
+               NEEDS_BUILD=true
+            else
+               for pkg_path in $EXPECTED_PKGS; do
+                 pkg_basename=$(basename "$pkg_path")
+                 if [[ ! -f "cache/$pkg_basename" ]]; then
+                   NEEDS_BUILD=true
+                   break
+                 fi
+               done
+            fi
+
+            if [[ "$NEEDS_BUILD" == "false" ]]; then
+               echo "Package $dir is up to date. Moving from cache."
+               for pkg_path in $EXPECTED_PKGS; do
+                 pkg_basename=$(basename "$pkg_path")
+                 mv "cache/$pkg_basename" "output/"
+               done
+               SKIPPED+=("$dir")
+               continue
+            fi
+
+            echo "Building $dir with paru"
+            if sudo -u builder bash -lc "cd '$GITHUB_WORKSPACE/$dir' && paru --noconfirm -B '$GITHUB_WORKSPACE/$dir'" >/tmp/build-"$dir".log 2>&1; then
+              find "$dir" -maxdepth 1 -name '*.pkg.tar.zst' -exec mv -f {} output/ \;
               pacman -Sy --noconfirm >/dev/null 2>&1 || true
               BUILT+=("$dir")
-              echo "=== [$dir] OK ==="
             else
-              echo "::warning::[$dir] build failed"
+              echo "Build failed for $dir"
               tail -n 120 /tmp/build-"$dir".log || true
               FAILED+=("$dir")
             fi
           done
 
           echo "built=${BUILT[*]}" >> "$GITHUB_OUTPUT"
+          echo "skipped=${SKIPPED[*]}" >> "$GITHUB_OUTPUT"
           echo "failed=${FAILED[*]}" >> "$GITHUB_OUTPUT"
 
-          echo "### Build summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Built OK: ${BUILT[*]:-none}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Failed: ${FAILED[*]:-none}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Built: ${BUILT[*]:-none}"
+          echo "Skipped: ${SKIPPED[*]:-none}"
+          echo "Failed: ${FAILED[*]:-none}"
 
-          if [[ ${#BUILT[@]} -eq 0 ]]; then
-            echo "::error::No package built successfully, aborting before publish."
-            exit 1
+          if [[ ${#BUILT[@]} -eq 0 && ${#FAILED[@]} -eq 0 ]]; then
+            echo "has_new_builds=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_new_builds=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Generate pacman repo database once
+          if [[ ${#FAILED[@]} -gt 0 ]]; then
+             echo "Some packages failed to build."
+             exit 1
+          fi
+
+      - name: Generate fresh pacman database
         run: |
           set -euo pipefail
           cd output
           shopt -s nullglob
           pkgs=( *.pkg.tar.zst )
           if (( ${#pkgs[@]} == 0 )); then
-            echo "::error::No package artifacts found in output/."
-            exit 1
+            echo "No packages exist. Repository is empty."
+            exit 0
           fi
-          rm -f "${REPO_DB_NAME}.db" "${REPO_DB_NAME}.files"                 "${REPO_DB_NAME}.db.tar.gz" "${REPO_DB_NAME}.files.tar.gz"                 "${REPO_DB_NAME}.db.tar.gz.old" "${REPO_DB_NAME}.files.tar.gz.old"
+          echo "Generating clean database from active packages only."
           repo-add "${REPO_DB_NAME}.db.tar.gz" "${pkgs[@]}"
-          ls -la
 
-      - name: Publish to fixed GitHub Release (overwrite)
+      - name: Publish to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -118,19 +160,28 @@ jobs:
           REPO="${{ github.repository }}"
           TAG="${{ env.RELEASE_TAG }}"
 
+          shopt -s nullglob
+          if [[ -z "$(ls -A output 2>/dev/null)" ]]; then
+             echo "Output is empty. Nothing to publish."
+             exit 0
+          fi
+
           if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-            echo "=== Release '$TAG' exists, clearing old assets ==="
-            gh release view "$TAG" --repo "$REPO" --json assets -q '.assets[].name'               | while read -r name; do
+            echo "Cleaning up all old assets to remove deleted packages."
+            gh release view "$TAG" --repo "$REPO" --json assets -q '.assets[].name' \
+              | while read -r name; do
                   [[ -n "$name" ]] || continue
-                  echo "Deleting old asset: $name"
                   gh release delete-asset "$TAG" "$name" --repo "$REPO" -y || true
                 done
           else
-            echo "=== Creating release '$TAG' ==="
-            gh release create "$TAG" --repo "$REPO"               --title "Arch Package Repository"               --notes "Auto-built pacman repository."
+            echo "Creating release $TAG."
+            gh release create "$TAG" --repo "$REPO" \
+              --title "Arch Package Repository" \
+              --notes "Auto-built pacman repository."
           fi
 
-          echo "=== Uploading fresh assets ==="
+          echo "Uploading current assets."
           gh release upload "$TAG" output/* --repo "$REPO" --clobber
 
-          gh release edit "$TAG" --repo "$REPO"             --notes "Auto-built pacman repository. Last updated: $(date -u '+%Y-%m-%d %H:%M UTC'). Built: ${{ steps.build.outputs.built }}. Failed: ${{ steps.build.outputs.failed }}"
+          gh release edit "$TAG" --repo "$REPO" \
+            --notes "Last updated: $(date -u '+%Y-%m-%d %H:%M UTC'). Built: ${{ steps.build.outputs.built }}. Skipped: ${{ steps.build.outputs.skipped }}"
