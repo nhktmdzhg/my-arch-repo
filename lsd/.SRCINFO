@@ -1,0 +1,12 @@
+pkgbase = lsd
+	pkgdesc = A Cheap Psychedelic Simulator on Linux
+	pkgver = 1.3
+	pkgrel = 1
+	url = https://github.com/Aniket-Pradhan/lsd
+	arch = i686
+	arch = x86_64
+	source = lsd
+	md5sums = 0319a8b534ea98135389332ccec4e968
+
+pkgname = lsd
+

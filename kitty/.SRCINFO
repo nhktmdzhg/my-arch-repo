@@ -1,0 +1,32 @@
+pkgbase = kitty
+	pkgdesc = A modern, hackable, featureful, OpenGL based terminal emulator
+	pkgver = 0.9.0
+	pkgrel = 1
+	url = https://github.com/kovidgoyal/kitty
+	arch = i686
+	arch = x86_64
+	license = GPL3
+	makedepends = pkg-config
+	makedepends = python-setuptools
+	makedepends = libxinerama
+	makedepends = libxcursor
+	makedepends = libxrandr
+	makedepends = libxkbcommon
+	makedepends = glfw-x11
+	makedepends = wayland-protocols
+	makedepends = mesa
+	depends = python3
+	depends = freetype2
+	depends = fontconfig
+	depends = wayland
+	depends = libx11
+	depends = libxkbcommon-x11
+	optdepends = imagemagick: viewing images with icat
+	provides = kitty
+	conflicts = kitty
+	conflicts = kitty-git
+	source = kitty-0.9.0.tar.gz::https://github.com/kovidgoyal/kitty/archive/v0.9.0.tar.gz
+	md5sums = 413dc6fb7ad7a7983fdb9dad33fdc7a2
+
+pkgname = kitty
+
