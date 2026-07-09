@@ -2,6 +2,8 @@ name: Build Changed AUR Packages
 
 on:
   push:
+    branches-ignore:
+      - main
   pull_request:
 
 permissions:
@@ -134,6 +136,9 @@ jobs:
           BUILT=()
           FAILED=()
 
+          mkdir -p "$GITHUB_WORKSPACE/pr-artifacts"
+          chown builder:builder "$GITHUB_WORKSPACE/pr-artifacts"
+
           for dir in "${packages[@]}"; do
             [[ -n "$dir" ]] || continue
             echo "Building $dir with paru"
@@ -142,6 +147,8 @@ jobs:
             if ls "$GITHUB_WORKSPACE/$dir"/*.pkg.tar.zst >/dev/null 2>&1; then
               BUILT+=("$dir")
               echo "Build OK: $dir"
+              
+              sudo -u builder mv "$GITHUB_WORKSPACE/$dir"/*.pkg.tar.zst "$GITHUB_WORKSPACE/pr-artifacts/"
             else
               echo "Build failed for $dir"
               FAILED+=("$dir")
@@ -156,4 +163,14 @@ jobs:
 
           if (( ${#FAILED[@]} > 0 )); then
             echo "Some packages failed to build in PR check."
+            exit 1
           fi
+
+      - name: Upload pre-built packages for Release pipeline
+        if: steps.changed.outputs.has_changes == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: pre-built-aur-packages-${{ github.sha }}
+          path: ${{ github.workspace }}/pr-artifacts/*.pkg.tar.zst
+          retention-days: 1
+          overwrite: true

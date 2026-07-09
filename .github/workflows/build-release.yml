@@ -81,13 +81,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p cache output /tmp/repo-files
-          echo "Downloading existing artifacts to cache/"
+          echo "Downloading existing artifacts to cache/ from GitHub Releases..."
           gh release download "$RELEASE_TAG" --repo "${{ github.repository }}" --dir cache --pattern "*.pkg.tar.zst" 2>/dev/null || true
           gh release download "$RELEASE_TAG" --repo "${{ github.repository }}" --dir cache --pattern "${REPO_DB_NAME}.files.tar.gz" 2>/dev/null || true
 
           if [[ -f "cache/${REPO_DB_NAME}.files.tar.gz" ]]; then
              tar -xzf "cache/${REPO_DB_NAME}.files.tar.gz" -C /tmp/repo-files 2>/dev/null || true
           fi
+
+      - name: Download pre-built packages from Verify workflow
+        uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          pattern: pre-built-aur-packages-*
+          path: cache/
+          merge-multiple: true
 
       - name: Build and filter current packages
         id: build
