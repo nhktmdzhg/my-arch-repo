@@ -41,6 +41,12 @@ jobs:
           FAILED=()
           REMOVED=()
 
+          echo "Cloning CachyOS-PKGBUILDS repository..."
+          rm -rf /tmp/cachyos-pkgbuilds
+          if ! git clone --depth=1 "https://github.com/CachyOS/CachyOS-PKGBUILDS.git" /tmp/cachyos-pkgbuilds >/tmp/cachyos-clone.log 2>&1; then
+            echo "::warning::Failed to clone CachyOS repository"
+          fi
+
           mapfile -t VALID_PKGS < <(sed 's/#.*//' packages.txt | awk '{print $1}' | grep -v '^$' | sed 's/^local://')
 
           for dir in */ ; do
@@ -67,7 +73,21 @@ jobs:
             fi
 
             pkg="$pkg_entry"
-            echo "Cloning $pkg from AUR"
+            
+            echo "Checking CachyOS-PKGBUILDS for $pkg..."
+            cachyos_dir=$(find /tmp/cachyos-pkgbuilds -mindepth 1 -maxdepth 4 -type d -name "$pkg" -not -path "*/\.git/*" -print -quit)
+
+            if [[ -n "$cachyos_dir" ]]; then
+              echo "Found $pkg in CachyOS-PKGBUILDS"
+              echo "Syncing files for $pkg from CachyOS"
+              mkdir -p "$pkg"
+              find "$pkg" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+              rsync -a --exclude='.git' "$cachyos_dir/" "$pkg/"
+              SYNCED+=("$pkg")
+              continue
+            fi
+
+            echo "Not found in CachyOS. Cloning $pkg from AUR..."
             rm -rf "/tmp/aur-clone/$pkg"
 
             if ! git clone --depth=1 "https://aur.archlinux.org/${pkg}.git" "/tmp/aur-clone/$pkg" >/tmp/clone.log 2>&1; then
@@ -77,7 +97,7 @@ jobs:
               continue
             fi
 
-            echo "Syncing files for $pkg"
+            echo "Syncing files for $pkg from AUR"
             mkdir -p "$pkg"
             find "$pkg" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
             rsync -a --exclude='.git' "/tmp/aur-clone/$pkg/" "$pkg/"
@@ -104,9 +124,9 @@ jobs:
           title: 'AUR sync: cập nhật và dọn dẹp source packages'
           labels: aur-sync
           body: |
-            ### 🔄 AUR Synchronization Report
+            ### 🔄 AUR / CachyOS Synchronization Report
 
-            Hệ thống tự động đã thực hiện kiểm tra và đồng bộ hóa các gói từ AUR.
+            Hệ thống tự động đã thực hiện kiểm tra và đồng bộ hóa các gói từ CachyOS và AUR.
 
             | Trạng thái | Gói phần mềm |
             | :--- | :--- |

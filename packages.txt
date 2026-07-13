@@ -18,11 +18,15 @@ obs-pipewire-audio-capture
 onlyoffice
 osu-lazer-bin
 osu-mime
+pacman
+paru
 physlock
 pwvucontrol
+rate-mirrors
 rhythmbox-plugin-tray-icon
 ripdrag
 rustdesk
+scx-manager
 snapper-rollback
 teamviewer
 ventoy
@@ -60,5 +64,4 @@ xlibre-xorgxrdp
 #####
 # Local packages
 local:linux-nanoka
-local:paru
 local:mcontrolcenter-git
