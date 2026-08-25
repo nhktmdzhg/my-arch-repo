@@ -46,11 +46,10 @@ Want to build your own automated AUR farm? Follow these steps to fork and config
 ### Step 1: Fork and Clean
 
 - Fork this repository to your own GitHub account.
-- Delete any existing package directories you do not need.
 
 ### Step 2: Choose the correct Docker container
 
-This repository currently uses the `cachyos/cachyos-v3` Docker container in both `build-release.yml` and `verify-change.yml`.
+This repository currently uses the `cachyos/cachyos-v3` Docker container in `build-release.yml`.
 
 If you fork this repository, choose the container that matches your target machines:
 
@@ -58,7 +57,7 @@ If you fork this repository, choose the container that matches your target machi
 - `cachyos/cachyos-v3` for `x86-64-v3` builds.
 - `cachyos/cachyos-v4` for `x86-64-v4` builds.
 
-If you need a different target level, edit the workflow files `build-release.yml` and `verify-change.yml` and replace the container image accordingly.
+If you need a different target level, edit the workflow file `build-release.yml` and replace the container image accordingly.
 
 ### Step 3: Choose the correct makepkg profile
 
@@ -115,7 +114,6 @@ The entire repository is controlled by a single file: `packages.txt`.
 ### Step 7: Relax and Let it Run
 
 - The Sync Workflow runs on a schedule and when `packages.txt` changes. It reads `packages.txt`, pulls the latest PKGBUILDs from the AUR, skips `local:` entries, deletes removed packages, and creates a clean Pull Request.
-- The Verify Workflow automatically triggers on push or pull request and test-builds changed packages using `paru`.
 - The Publish Workflow runs on schedule, on push to `main`, or manually. It checks existing assets, reuses cached packages when possible, falls back to previous release files if needed, generates a fresh pacman database, and uploads everything to the repository Release tag.
 
 **Disclaimer:** `SigLevel = Optional TrustAll` is used for convenience in this personal setup, meaning packages are not GPG-signed. Only use this configuration for repositories you fully control or trust.
@@ -166,11 +164,10 @@ Nếu bạn muốn tự dựng một hệ thống build AUR tự động cho tà
 #### Bước 1: Fork và dọn dẹp
 
 - Fork repository này về tài khoản GitHub của bạn.
-- Xóa các thư mục gói có sẵn mà bạn không cần.
 
 #### Bước 2: Chọn Docker container phù hợp
 
-Repository này hiện đang dùng Docker container `cachyos/cachyos-v3` trong cả hai workflow `build-release.yml` và `verify-change.yml`.
+Repository này hiện đang dùng Docker container `cachyos/cachyos-v3` trong workflow `build-release.yml`.
 
 Nếu bạn fork repository này, hãy chọn container phù hợp với máy đích của bạn:
 
@@ -178,7 +175,7 @@ Nếu bạn fork repository này, hãy chọn container phù hợp với máy đ
 - `cachyos/cachyos-v3` cho build `x86-64-v3`.
 - `cachyos/cachyos-v4` cho build `x86-64-v4`.
 
-Nếu bạn muốn đổi target, hãy sửa hai file workflow `build-release.yml` và `verify-change.yml`, rồi thay container image tương ứng.
+Nếu bạn muốn đổi target, hãy sửa file workflow `build-release.yml`, rồi thay container image tương ứng.
 
 #### Bước 3: Chọn makepkg profile phù hợp
 
@@ -235,7 +232,6 @@ Toàn bộ repository này được điều khiển bởi một file duy nhất 
 #### Bước 7: Để hệ thống tự chạy
 
 - **Sync Workflow** chạy theo lịch và khi `packages.txt` thay đổi. Workflow này đọc `packages.txt`, kéo PKGBUILD mới nhất từ AUR, bỏ qua các dòng `local:`, xóa các gói đã bị loại bỏ, rồi tạo một Pull Request sạch.
-- **Verify Workflow** sẽ tự kích hoạt trên push hoặc pull request và test-build các gói thay đổi bằng `paru`.
 - **Publish Workflow** chạy theo lịch, khi push vào `main`, hoặc chạy tay. Workflow này kiểm tra asset hiện có, tận dụng cache nếu có thể, fallback về file từ release trước nếu cần, tạo lại pacman database mới, rồi upload toàn bộ lên Release tag của repository.
 
 **Lưu ý:** `SigLevel = Optional TrustAll` được dùng để tiện cho mô hình repository cá nhân này, nghĩa là gói không được ký GPG. Chỉ nên dùng cấu hình này cho repository do chính bạn kiểm soát hoặc bạn thực sự tin tưởng.
