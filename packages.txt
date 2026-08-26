@@ -6,7 +6,6 @@ beautyline
 catppuccin-fcitx5-git
 catppuccin-obs-theme-git
 catppuccin-whiskers-bin
-equicord-installer-bin
 equicord-openasar
 fcitx5-lotus-git
 icu74
