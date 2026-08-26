@@ -100,7 +100,7 @@ jobs:
           if gh release view "$RELEASE_TAG" --repo "${{ github.repository }}" --json assets -q '.assets[].name' | grep -qx "${REPO_DB_NAME}.db"; then
           {
             echo ""
-            echo [nanoka]
+            echo [$REPO_DB_NAME]
             echo SigLevel = Optional TrustAll
             echo "Server = https://github.com/${{ github.repository }}/releases/download/$RELEASE_TAG"
           } >> /etc/pacman.conf
