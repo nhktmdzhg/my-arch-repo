@@ -11,6 +11,7 @@ pkgbase = oh-my-pi-git
 	makedepends = rustup
 	makedepends = cmake
 	makedepends = make
+	makedepends = ninja
 	depends = glibc
 	depends = gcc-libs
 	depends = bun

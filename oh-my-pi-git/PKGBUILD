@@ -8,7 +8,7 @@ license=('MIT')
 provides=('omp')
 conflicts=('omp')
 depends=('glibc' 'gcc-libs' 'bun')
-makedepends=('git' 'rust' 'rustup' 'cmake' 'make')
+makedepends=('git' 'rust' 'rustup' 'cmake' 'make' 'ninja')
 options=('!lto' '!strip')
 
 source=("git+https://github.com/can1357/oh-my-pi.git")
