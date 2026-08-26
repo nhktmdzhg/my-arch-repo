@@ -105,6 +105,9 @@ jobs:
             SYNCED+=("$pkg")
           done < packages.txt
 
+          find . -mindepth 2 -name ".gitignore" -delete
+          find . -mindepth 2 -name ".git" -exec rm -rf {} +
+
           echo "synced=${SYNCED[*]}" >> "$GITHUB_OUTPUT"
           echo "failed=${FAILED[*]}" >> "$GITHUB_OUTPUT"
           echo "removed=${REMOVED[*]}" >> "$GITHUB_OUTPUT"
