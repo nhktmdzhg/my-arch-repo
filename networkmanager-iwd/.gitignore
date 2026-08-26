@@ -1,9 +1,0 @@
-# SPDX-FileCopyrightText: Arch Linux contributors
-# SPDX-License-Identifier: 0BSD
-
-*~
-*.log
-NetworkManager
-libnm-iwd-*-x86_64.pkg.tar.*
-networkmanager-iwd-*.pkg.tar.*
-nm-iwd-cloud-setup-*-x86_64.pkg.tar.*
