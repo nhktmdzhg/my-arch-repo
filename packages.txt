@@ -1,6 +1,7 @@
 #####
 # AUR packages
 all-contributors-cli
+anpan-git
 awesome-luajit-git
 beautyline
 catppuccin-fcitx5-git
