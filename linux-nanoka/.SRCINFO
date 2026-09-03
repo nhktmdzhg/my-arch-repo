@@ -1,6 +1,6 @@
 pkgbase = linux-nanoka
 	pkgdesc = Linux EEVDF + LTO + AutoFDO + Propeller Cachy Sauce Kernel by CachyOS with other patches and improvements. Build by Nanoka with love.
-	pkgver = 7.2.2
+	pkgver = 7.2.3
 	pkgrel = 1
 	url = https://github.com/CachyOS/linux-cachyos
 	arch = x86_64
@@ -31,8 +31,8 @@ pkgbase = linux-nanoka
 	options = !strip
 	options = !debug
 	options = !lto
-	source = https://github.com/CachyOS/linux/releases/download/cachyos-7.2.2-1/cachyos-7.2.2-1.tar.gz
-	source = https://github.com/CachyOS/linux/releases/download/cachyos-7.2.2-1/cachyos-7.2.2-1.tar.gz.asc
+	source = https://github.com/CachyOS/linux/releases/download/cachyos-7.2.3-2/cachyos-7.2.3-2.tar.gz
+	source = https://github.com/CachyOS/linux/releases/download/cachyos-7.2.3-2/cachyos-7.2.3-2.tar.gz.asc
 	source = config
 	source = https://raw.githubusercontent.com/cachyos/kernel-patches/master/7.2/misc/dkms-clang.patch
 	source = git+https://github.com/cachyos/zfs.git#commit=71a9f9578616a90c3c14bb59629fb4d31bfd68d1
@@ -42,7 +42,7 @@ pkgbase = linux-nanoka
 	source = git+https://github.com/aravance/r8125.git
 	validpgpkeys = E18447AC260021D31F3FF6C4C8A2A4774B8B63C4
 	validpgpkeys = E8B9AA39F054E30E8290D492C3C4820857F654FE
-	b2sums = ef0dd68d31a0c51ec09c7025331ed821833965d04bead87151ec03e884ac48d699c098beea177e9a098d74d6f1c929def8052d1973712d60d213708f7c51d4ee
+	b2sums = 5531efbf7fa5b7b914c6530806b801d080be1471eef9a5b644c5d95d55a41c6c0e00fca7d62435bb139d27a63ac5e20b9399dcd6f6444058ad26053b51bdee34
 	b2sums = SKIP
 	b2sums = c7d7d02582c853cfa9cf651c22788bee023b75a3f45c8c615410a303a1746c93982b8d4b8941eb0ab1dd7d704e1ab26380cade9a6eef1aa7e0f30112f08ef3a9
 	b2sums = c992567bd7dd8553432be496ffa1c17e2f5ebe9c7edb51945cf977e1b742dd6517c210d8843bb82744ca705efd07f8027cd7dde41b50215ebd707a34aa81462e
@@ -68,7 +68,7 @@ pkgname = linux-nanoka
 	provides = NTSYNC-MODULE
 	provides = VHBA-MODULE
 	provides = ADIOS-MODULE
-	provides = linux-cachyos-lto=7.2.2-1
+	provides = linux-cachyos-lto=7.2.3-1
 	replaces = linux-cachyos-lto
 
 pkgname = linux-nanoka-headers
@@ -87,20 +87,20 @@ pkgname = linux-nanoka-headers
 	depends = llvm
 	depends = lld
 	provides = LINUX-HEADERS
-	provides = linux-cachyos-lto-headers=7.2.2-1
+	provides = linux-cachyos-lto-headers=7.2.3-1
 	replaces = linux-cachyos-lto-headers
 
 pkgname = linux-nanoka-zfs
 	pkgdesc = zfs module for the Linux EEVDF + LTO + AutoFDO + Propeller Cachy Sauce Kernel by CachyOS with other patches and improvements. Build by Nanoka with love. kernel
 	license = CDDL
 	depends = pahole
-	depends = linux-nanoka=7.2.2-1
+	depends = linux-nanoka=7.2.3-1
 	provides = ZFS-MODULE
 
 pkgname = linux-nanoka-nvidia-open
 	pkgdesc = nvidia open modules of 610.57.04 driver for the linux-nanoka kernel
 	license = MIT AND GPL-2.0-only
-	depends = linux-nanoka=7.2.2-1
+	depends = linux-nanoka=7.2.3-1
 	depends = nvidia-utils=610.57.04
 	depends = libglvnd
 	provides = NVIDIA-MODULE
@@ -109,4 +109,4 @@ pkgname = linux-nanoka-nvidia-open
 pkgname = linux-nanoka-r8125
 	pkgdesc = r8125 modules for the linux-nanoka kernel
 	license = GPL-2.0-only
-	depends = linux-nanoka=7.2.2-1
+	depends = linux-nanoka=7.2.3-1
