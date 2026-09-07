@@ -10,48 +10,56 @@ url="https://github.com/dmitry-s93/MControlCenter"
 license=('GPL')
 depends=('qt6-base' 'hicolor-icon-theme')
 makedepends=('cmake' 'make' 'qt6-tools' 'qt6-declarative')
-source=("git+https://github.com/dmitry-s93/MControlCenter")
-md5sums=('SKIP')
+source=(
+    "git+https://github.com/dmitry-s93/MControlCenter"
+    "modprobe.d__mcontrolcenter-ec_sys.conf"
+    "modules-load.d__mcontrolcenter-ec_sys.conf"
+)
+md5sums=('SKIP' 'SKIP' 'SKIP')
 provides=('mcontrolcenter')
-conflict=()
+conflicts=('mcontrolcenter')
 
 pkgver() {
-  cd "$srcdir/$_camel_pkgname"
-  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+    cd "$srcdir/$_camel_pkgname"
+    printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
 }
 
 build() {
-  cd ${_camel_pkgname}
-  cmake -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_INSTALL_PREFIX=/usr \
-        -B build
-
-  make -Cbuild -j
+    cd "$srcdir/$_camel_pkgname"
+    
+    # Build translations into src/i18n/ to satisfy resources.qrc requirements
+    for ts in src/i18n/*.ts; do
+        lrelease "$ts" -qm "${ts%.ts}.qm" 2>/dev/null || /usr/lib/qt6/bin/lrelease "$ts" -qm "${ts%.ts}.qm"
+    done
+    
+    cmake -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr
+    
+    cmake --build build -j"$(nproc)"
 }
 
 package() {
-    install -Dm 644 ../modprobe.d__mcontrolcenter-ec_sys.conf "${pkgdir}/etc/modprobe.d/mcontrolcenter-ec_sys.conf"
-    install -Dm 644 ../modules-load.d__mcontrolcenter-ec_sys.conf "${pkgdir}/etc/modules-load.d/mcontrolcenter-ec_sys.conf"
-
     cd "$srcdir/$_camel_pkgname"
-
-    make -Cbuild DESTDIR="$pkgdir" install
-    # create a symlink in libexec that point to the helper
-    install -dm644 "${pkgdir}/usr/libexec/"
-    ln -s "/usr/bin/mcontrolcenter-helper" "${pkgdir}/usr/libexec/mcontrolcenter-helper"
-
-    # licenses
-    install -Dm644 "LICENSE" "${pkgdir}/usr/share/licenses/${_pkgname}/LICENSE"
-
-    # Desktop file
-    install -Dm644 "resources/${_pkgname}.desktop"\
-            "${pkgdir}/usr/share/applications/${_pkgname}.desktop"
-    install -Dm644 "resources/${_pkgname}.svg"\
-            "${pkgdir}/usr/share/icons/hicolor/scalable/apps/${_pkgname}.svg"
-
-    # dbus services files
-    install -Dm644 "src/helper/mcontrolcenter-helper.conf"\
-            "${pkgdir}/usr/share/dbus-1/system.d/mcontrolcenter-helper.conf"
-    install -Dm644 "src/helper/mcontrolcenter.helper.service"\
-            "${pkgdir}/usr/share/dbus-1/system-services/mcontrolcenter.helper.service"
+    
+    # Binaries
+    install -Dm755 build/mcontrolcenter "${pkgdir}/usr/bin/mcontrolcenter"
+    install -Dm755 build/helper/mcontrolcenter-helper "${pkgdir}/usr/bin/mcontrolcenter-helper"
+    
+    # Helper symlink for libexec
+    install -dm755 "${pkgdir}/usr/libexec"
+    ln -sf /usr/bin/mcontrolcenter-helper "${pkgdir}/usr/libexec/mcontrolcenter-helper"
+    
+    # License
+    install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${_pkgname}/LICENSE"
+    
+    # Desktop & Icon
+    install -Dm644 "resources/${_pkgname}.desktop" "${pkgdir}/usr/share/applications/${_pkgname}.desktop"
+    install -Dm644 "resources/${_pkgname}.svg" "${pkgdir}/usr/share/icons/hicolor/scalable/apps/${_pkgname}.svg"
+    
+    # DBus service configurations
+    install -Dm644 "src/helper/mcontrolcenter-helper.conf" "${pkgdir}/usr/share/dbus-1/system.d/mcontrolcenter-helper.conf"
+    install -Dm644 "src/helper/mcontrolcenter.helper.service" "${pkgdir}/usr/share/dbus-1/system-services/mcontrolcenter.helper.service"
+    install -Dm644 "$srcdir/modprobe.d__mcontrolcenter-ec_sys.conf" "${pkgdir}/etc/modprobe.d/mcontrolcenter-ec_sys.conf"
+    install -Dm644 "$srcdir/modules-load.d__mcontrolcenter-ec_sys.conf" "${pkgdir}/etc/modules-load.d/mcontrolcenter-ec_sys.conf"
 }

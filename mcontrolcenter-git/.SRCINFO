@@ -12,7 +12,12 @@ pkgbase = mcontrolcenter-git
 	depends = qt6-base
 	depends = hicolor-icon-theme
 	provides = mcontrolcenter
+	conflicts = mcontrolcenter
 	source = git+https://github.com/dmitry-s93/MControlCenter
+	source = modprobe.d__mcontrolcenter-ec_sys.conf
+	source = modules-load.d__mcontrolcenter-ec_sys.conf
+	md5sums = SKIP
+	md5sums = SKIP
 	md5sums = SKIP
 
 pkgname = mcontrolcenter-git
