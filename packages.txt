@@ -29,6 +29,7 @@ osu-mime
 pacman
 paru
 physlock
+picom-nhktmdzhg-git
 pvpn-go
 pwvucontrol
 rate-mirrors
