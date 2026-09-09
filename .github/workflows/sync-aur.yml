@@ -36,18 +36,19 @@ jobs:
         id: sync
         run: |
           set -uo pipefail
-          mkdir -p /tmp/aur-clone
-          SYNCED=()
-          FAILED=()
-          REMOVED=()
+
+          STATUS_DIR="/tmp/sync-status"
+          AUR_TMP="/tmp/aur-clone"
+          rm -rf "$STATUS_DIR" "$AUR_TMP" /tmp/cachyos-pkgbuilds
+          mkdir -p "$STATUS_DIR/synced" "$STATUS_DIR/failed" "$STATUS_DIR/skipped" "$AUR_TMP"
 
           echo "Cloning CachyOS-PKGBUILDS repository..."
-          rm -rf /tmp/cachyos-pkgbuilds
           if ! git clone --depth=1 "https://github.com/CachyOS/CachyOS-PKGBUILDS.git" /tmp/cachyos-pkgbuilds >/tmp/cachyos-clone.log 2>&1; then
             echo "::warning::Failed to clone CachyOS repository"
           fi
 
           mapfile -t VALID_PKGS < <(sed 's/#.*//' packages.txt | awk '{print $1}' | grep -v '^$' | sed 's/^local://')
+          REMOVED=()
 
           for dir in */ ; do
             [[ -e "$dir" ]] || continue
@@ -63,54 +64,65 @@ jobs:
           done
 
           while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
-            pkg_entry="$(echo "$raw_line" | sed 's/#.*//' | xargs)"
-            [[ -z "$pkg_entry" ]] && continue
+            (
+              pkg_entry="$(echo "$raw_line" | sed 's/#.*//' | xargs)"
+              [[ -z "$pkg_entry" ]] && exit 0
 
-            if [[ "$pkg_entry" == local:* ]]; then
-              pkg="${pkg_entry#local:}"
-              echo "Skipping sync for local package: $pkg"
-              continue
-            fi
+              if [[ "$pkg_entry" == local:* ]]; then
+                pkg="${pkg_entry#local:}"
+                echo "Skipping sync for local package: $pkg"
+                touch "$STATUS_DIR/skipped/$pkg"
+                exit 0
+              fi
 
-            pkg="$pkg_entry"
-            
-            echo "Checking CachyOS-PKGBUILDS for $pkg..."
-            cachyos_dir=$(find /tmp/cachyos-pkgbuilds -mindepth 1 -maxdepth 4 -type d -name "$pkg" -not -path "*/\.git/*" -print -quit)
+              pkg="$pkg_entry"
+              
+              echo "Checking CachyOS-PKGBUILDS for $pkg..."
+              cachyos_dir=$(find /tmp/cachyos-pkgbuilds -mindepth 1 -maxdepth 4 -type d -name "$pkg" -not -path "*/\.git/*" -print -quit 2>/dev/null)
 
-            if [[ -n "$cachyos_dir" ]]; then
-              echo "Found $pkg in CachyOS-PKGBUILDS"
-              echo "Syncing files for $pkg from CachyOS"
+              if [[ -n "$cachyos_dir" ]]; then
+                echo "Found $pkg in CachyOS-PKGBUILDS"
+                echo "Syncing files for $pkg from CachyOS"
+                mkdir -p "$pkg"
+                find "$pkg" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+                rsync -a --exclude='.git' "$cachyos_dir/" "$pkg/"
+                touch "$STATUS_DIR/synced/$pkg"
+                exit 0
+              fi
+
+              echo "Not found in CachyOS. Cloning $pkg from AUR..."
+              clone_pkg_dir="$AUR_TMP/$pkg"
+              rm -rf "$clone_pkg_dir"
+
+              if ! git clone --depth=1 "https://aur.archlinux.org/${pkg}.git" "$clone_pkg_dir" >/tmp/clone-$pkg.log 2>&1; then
+                echo "::warning::Clone failed for $pkg"
+                cat "/tmp/clone-$pkg.log" 2>/dev/null || true
+                touch "$STATUS_DIR/failed/$pkg"
+                exit 0
+              fi
+
+              echo "Syncing files for $pkg from AUR"
               mkdir -p "$pkg"
               find "$pkg" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-              rsync -a --exclude='.git' "$cachyos_dir/" "$pkg/"
-              SYNCED+=("$pkg")
-              continue
-            fi
-
-            echo "Not found in CachyOS. Cloning $pkg from AUR..."
-            rm -rf "/tmp/aur-clone/$pkg"
-
-            if ! git clone --depth=1 "https://aur.archlinux.org/${pkg}.git" "/tmp/aur-clone/$pkg" >/tmp/clone.log 2>&1; then
-              echo "::warning::Clone failed for $pkg"
-              cat /tmp/clone.log
-              FAILED+=("$pkg")
-              continue
-            fi
-
-            echo "Syncing files for $pkg from AUR"
-            mkdir -p "$pkg"
-            find "$pkg" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-            rsync -a --exclude='.git' "/tmp/aur-clone/$pkg/" "$pkg/"
-
-            SYNCED+=("$pkg")
+              rsync -a --exclude='.git' "$clone_pkg_dir/" "$pkg/"
+              rm -rf "$clone_pkg_dir"
+              touch "$STATUS_DIR/synced/$pkg"
+            ) &
           done < packages.txt
+
+          echo "Waiting for all background sync jobs to complete..."
+          wait
+
+          SYNCED=($(ls -1 "$STATUS_DIR/synced" 2>/dev/null || true))
+          FAILED=($(ls -1 "$STATUS_DIR/failed" 2>/dev/null || true))
 
           find . -mindepth 2 -name ".gitignore" -delete
           find . -mindepth 2 -name ".git" -exec rm -rf {} +
+          rm -rf "$STATUS_DIR" "$AUR_TMP" /tmp/cachyos-pkgbuilds
 
-          echo "synced=${SYNCED[*]}" >> "$GITHUB_OUTPUT"
-          echo "failed=${FAILED[*]}" >> "$GITHUB_OUTPUT"
-          echo "removed=${REMOVED[*]}" >> "$GITHUB_OUTPUT"
+          echo "synced=${SYNCED[*]:-}" >> "$GITHUB_OUTPUT"
+          echo "failed=${FAILED[*]:-}" >> "$GITHUB_OUTPUT"
+          echo "removed=${REMOVED[*]:-}" >> "$GITHUB_OUTPUT"
 
           echo "### Sync summary" >> "$GITHUB_STEP_SUMMARY"
           echo "- Synced: ${SYNCED[*]:-none}" >> "$GITHUB_STEP_SUMMARY"
