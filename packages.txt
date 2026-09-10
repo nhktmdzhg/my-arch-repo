@@ -7,6 +7,8 @@ beautyline
 catppuccin-fcitx5-git
 catppuccin-obs-theme-git
 catppuccin-whiskers-bin
+electron22-bin
+electron22
 equicord-openasar
 fcitx5-lotus-git
 icu74
@@ -47,7 +49,7 @@ vscodium
 wezterm-git
 xclicker
 xmousepasteblock
-zalo-for-linux-bin
+zalo-for-linux-git
 
 #####
 # Xlibre packages
