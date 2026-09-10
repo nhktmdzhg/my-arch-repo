@@ -48,6 +48,7 @@ vscodium
 wezterm-git
 xclicker
 xmousepasteblock
+yuzufox-git
 zalo-for-linux-git
 
 #####
