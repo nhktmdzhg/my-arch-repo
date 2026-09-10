@@ -1,0 +1,34 @@
+pkgbase = electron22-bin
+	pkgdesc = Build cross platform desktop apps with web technologies — prebuilt
+	pkgver = 22.3.27
+	pkgrel = 4
+	url = https://electronjs.org
+	arch = aarch64
+	arch = armv7h
+	arch = x86_64
+	license = MIT
+	license = LicenseRef-custom
+	depends = alsa-lib
+	depends = gtk3
+	depends = nss
+	optdepends = kde-cli-tools: file deletion support (kioclient5)
+	optdepends = pipewire: WebRTC desktop sharing under Wayland
+	optdepends = qt5-base: enable Qt5 with --enable-features=AllowQt
+	optdepends = trash-cli: file deletion support (trash-put)
+	optdepends = xdg-utils: open URLs with desktop`s default
+	provides = electron22=22.3.27
+	conflicts = electron22
+	source_aarch64 = electron22-chromedriver-22.3.27-aarch64.zip::https://github.com/electron/electron/releases/download/v22.3.27/chromedriver-v22.3.27-linux-arm64.zip
+	source_aarch64 = electron22-22.3.27-aarch64.zip::https://github.com/electron/electron/releases/download/v22.3.27/electron-v22.3.27-linux-arm64.zip
+	sha256sums_aarch64 = 09d1b16ab31a17a914b9a871158458d34c7e5a52c7686ea923b9a9878e6d4539
+	sha256sums_aarch64 = 60279395a5ce4eaf3c08f1e717771b203830902d3fe3a7c311bc37deb1a0e15e
+	source_armv7h = electron22-chromedriver-22.3.27-armv7h.zip::https://github.com/electron/electron/releases/download/v22.3.27/chromedriver-v22.3.27-linux-armv7l.zip
+	source_armv7h = electron22-22.3.27-armv7h.zip::https://github.com/electron/electron/releases/download/v22.3.27/electron-v22.3.27-linux-armv7l.zip
+	sha256sums_armv7h = f020427cc1972928fd784b4f9ee912e8b42691c782c325fe7624aa2b38a7fcec
+	sha256sums_armv7h = 9f8372606e5ede83cf1c73a3d8ff07047e4e3ef614aa89a76cd497dc06cf119d
+	source_x86_64 = electron22-chromedriver-22.3.27-x86_64.zip::https://github.com/electron/electron/releases/download/v22.3.27/chromedriver-v22.3.27-linux-x64.zip
+	source_x86_64 = electron22-22.3.27-x86_64.zip::https://github.com/electron/electron/releases/download/v22.3.27/electron-v22.3.27-linux-x64.zip
+	sha256sums_x86_64 = 2c0eb7ccc5d68ac52dfcf7264e8dc61de4a9480ededb464c35c0ad7db41b8e53
+	sha256sums_x86_64 = 631d8eb08098c48ce2b29421e74c69ac0312b1e42f445d8a805414ba1242bf3a
+
+pkgname = electron22-bin
