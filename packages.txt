@@ -8,7 +8,6 @@ catppuccin-fcitx5-git
 catppuccin-obs-theme-git
 catppuccin-whiskers-bin
 electron22-bin
-electron22
 equicord-openasar
 fcitx5-lotus-git
 icu74
