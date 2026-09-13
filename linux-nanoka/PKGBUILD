@@ -175,12 +175,12 @@ fi
 
 pkgbase="linux-nanoka"
 _major=7.2
-_minor=4
+_minor=5
 #_minorc=$((_minor+1))
 #_rcver=rc8
 pkgver=${_major}.${_minor}
 _tagrel=1
-pkgrel=2
+pkgrel=1
 _srcname=cachyos-${_major}.${_minor}-${_tagrel}
 pkgdesc='Linux EEVDF + LTO + AutoFDO + Propeller Cachy Sauce Kernel by CachyOS with other patches and improvements. Build by Nanoka with love.'
 _kernver="$pkgver-$pkgrel"
@@ -821,7 +821,7 @@ for _p in "${pkgname[@]}"; do
 done
 
 
-b2sums=('75e77f55dc50e51dfbbae548959e2188807af879427db6ce831478886716dd28db295deb4b9adb907b5275006296f8a057155ec0d9ecc89d7d7b7b5d2dd793b3'
+b2sums=('244f9d1daa7efd5733e433c6664c9d544cb2184f1681e844b8c4d72dd96975075ab3b1abcabd7373f480e82cc00743964be30103c290b969777366d0af4080c5'
         'SKIP'
         'c7d7d02582c853cfa9cf651c22788bee023b75a3f45c8c615410a303a1746c93982b8d4b8941eb0ab1dd7d704e1ab26380cade9a6eef1aa7e0f30112f08ef3a9'
         'c992567bd7dd8553432be496ffa1c17e2f5ebe9c7edb51945cf977e1b742dd6517c210d8843bb82744ca705efd07f8027cd7dde41b50215ebd707a34aa81462e'
