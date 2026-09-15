@@ -175,7 +175,6 @@ jobs:
               echo "Package is pacman: adding --skipinteg to makepkg arguments"
               PARU_FLAGS="$PARU_FLAGS --mflags --skipinteg"
             fi
-            sed -i 's/_BUILD_DOCS=.*/_BUILD_DOCS=0/' "$PKG/PKGBUILD"
             sudo -u builder bash -lc "cd '$GITHUB_WORKSPACE/$PKG' && paru $PARU_FLAGS '$GITHUB_WORKSPACE/$PKG'" || true
             if ls "$PKG"/*.pkg.tar.zst >/dev/null 2>&1; then
               mv "$PKG"/*.pkg.tar.zst output/
