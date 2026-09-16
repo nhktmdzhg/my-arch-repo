@@ -175,12 +175,12 @@ fi
 
 pkgbase="linux-nanoka"
 _major=7.2
-_minor=5
+_minor=6
 #_minorc=$((_minor+1))
 #_rcver=rc8
 pkgver=${_major}.${_minor}
 _tagrel=1
-pkgrel=2
+pkgrel=1
 _srcname=cachyos-${_major}.${_minor}-${_tagrel}
 pkgdesc='Linux EEVDF + LTO + AutoFDO + Propeller Cachy Sauce Kernel by CachyOS with other patches and improvements. Build by Nanoka with love.'
 _kernver="$pkgver-$pkgrel"
@@ -217,7 +217,6 @@ _nv_pkg="NVIDIA-Linux-x86_64-${_nv_ver}"
 _nv_open_pkg="NVIDIA-kernel-module-source-${_nv_ver}"
 source=(
     "https://github.com/CachyOS/linux/releases/download/${_srcname}/${_srcname}.tar.gz"{,.asc}
-    "0001-revert-drm-gud-validate-TV-mode-names-before-creating-enum-property.patch"
     "config"
 )
 validpgpkeys=(
@@ -823,9 +822,8 @@ for _p in "${pkgname[@]}"; do
 done
 
 
-b2sums=('244f9d1daa7efd5733e433c6664c9d544cb2184f1681e844b8c4d72dd96975075ab3b1abcabd7373f480e82cc00743964be30103c290b969777366d0af4080c5'
+b2sums=('ed4476f3d7fcd852ed7ce14de2652d706d456e0e3d0002fa22feb5ba5a91376a1e2409ed765dbdf671c28222bac095b93be64aae9673bdec8bc603378d31220a'
         'SKIP'
-        'a90e6236ce30c83227016f70586ae6af87e1dfeb7433a71c87373fa2d688c9d6affe0e5672757a05ce56134ee561cabc6dce90c2ee293a712f4ba1b00f2e4811'
         'c7d7d02582c853cfa9cf651c22788bee023b75a3f45c8c615410a303a1746c93982b8d4b8941eb0ab1dd7d704e1ab26380cade9a6eef1aa7e0f30112f08ef3a9'
         'c992567bd7dd8553432be496ffa1c17e2f5ebe9c7edb51945cf977e1b742dd6517c210d8843bb82744ca705efd07f8027cd7dde41b50215ebd707a34aa81462e'
         '41934cd15c3909cb8613faf2f6c7af81bcf845bf4c0fb77418cfb0b7bacba81398c1d4bd1845958e68becd0ccfda63e17fd77c7d55c36203ed40fd19eb867ac9'
