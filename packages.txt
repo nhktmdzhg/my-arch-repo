@@ -62,3 +62,4 @@ xlibre-input-libinput
 # Local packages
 local:linux-nanoka
 local:mcontrolcenter-git
+local:omp-bun
