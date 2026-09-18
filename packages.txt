@@ -38,6 +38,7 @@ rhythmbox-plugin-tray-icon
 ripdrag
 rustdesk
 scx-manager
+serein
 snapper-rollback
 teamviewer
 ttf-ms-win11-base
@@ -60,4 +61,3 @@ xlibre-input-libinput
 # Local packages
 local:linux-nanoka
 local:mcontrolcenter-git
-local:serein
