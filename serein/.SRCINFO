@@ -1,6 +1,6 @@
 pkgbase = serein
 	pkgdesc = Unofficial native Discord client
-	pkgver = 1.0.0pre.nightly.20260917.36
+	pkgver = 1.0.0pre.nightly.20260918.37
 	pkgrel = 1
 	url = https://github.com/ViceVerse-cz/Serein
 	arch = x86_64
@@ -14,7 +14,6 @@ pkgbase = serein
 	makedepends = rust
 	depends = alsa-lib
 	depends = dbus
-	depends = fontconfig
 	depends = glib2
 	depends = glibc
 	depends = gst-plugin-pipewire
@@ -25,18 +24,10 @@ pkgbase = serein
 	depends = gtk4
 	depends = hicolor-icon-theme
 	depends = libgcc
-	depends = libglvnd
 	depends = libpulse
 	depends = libsoup3
 	depends = libstdc++
-	depends = libx11
-	depends = libxkbcommon
 	depends = libxkbcommon-x11
-	depends = libxcursor
-	depends = libxi
-	depends = libxrandr
-	depends = vulkan-icd-loader
-	depends = wayland
 	depends = webkitgtk-6.0
 	depends = xdg-desktop-portal
 	optdepends = gnome-keyring: Secret Service credential provider
@@ -46,7 +37,7 @@ pkgbase = serein
 	optdepends = xdg-desktop-portal-kde: screen sharing and global shortcuts on KDE Plasma
 	options = !debug
 	options = !lto
-	source = serein::git+https://github.com/ViceVerse-cz/Serein.git#tag=v1.0.0-nightly.20260917.36
+	source = serein::git+https://github.com/ViceVerse-cz/Serein.git#tag=v1.0.0-nightly.20260918.37
 	sha256sums = SKIP
 
 pkgname = serein
