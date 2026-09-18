@@ -24,7 +24,7 @@ networkmanager-iwd
 nmtui-go
 nvidia-utils
 obs-pipewire-audio-capture
-local:oh-my-pi-git
+omp-bun
 onlyoffice
 osu-lazer-bin
 osu-mime
@@ -62,4 +62,3 @@ xlibre-input-libinput
 # Local packages
 local:linux-nanoka
 local:mcontrolcenter-git
-local:omp-bun
