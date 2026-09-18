@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: '15 * * * *'
   push:
-    branches: [main]
+    branches: [test]
     paths-ignore:
       - '.github/**'
       - 'README.md'
@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: release-repo
-  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+  cancel-in-progress: true
 
 env:
   RELEASE_TAG: repository
@@ -43,6 +43,9 @@ jobs:
             case "$dir" in
               .github|cache|output) continue ;;
             esac
+            if [[ "$dir" != "serein" ]]; then
+              continue
+            fi
             if [[ -f "$dir/PKGBUILD" ]]; then
               pkgs+=("$dir")
             fi
@@ -294,49 +297,49 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_ENV"
 
-      - name: Publish to GitHub Release
-        if: steps.generate.outputs.has_packages == 'true' && steps.generate.outputs.has_new_changes == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          REPO="${{ github.repository }}"
-          TAG="${{ env.RELEASE_TAG }}"
+      # - name: Publish to GitHub Release
+      #   if: steps.generate.outputs.has_packages == 'true' && steps.generate.outputs.has_new_changes == 'true'
+      #   env:
+      #     GH_TOKEN: ${{ github.token }}
+      #   run: |
+      #     set -euo pipefail
+      #     REPO="${{ github.repository }}"
+      #     TAG="${{ env.RELEASE_TAG }}"
 
-          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-            echo "Cleaning up all old assets to remove deleted packages."
-            gh release view "$TAG" --repo "$REPO" --json assets -q '.assets[].name' \
-              | while read -r name; do
-                  [[ -n "$name" ]] || continue
-                  gh release delete-asset "$TAG" "$name" --repo "$REPO" -y || true
-                done
-          else
-            echo "Creating release $TAG."
-            gh release create "$TAG" --repo "$REPO" \
-              --title "Arch Package Repository" \
-              --notes "Auto-built pacman repository."
-          fi
+      #     if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+      #       echo "Cleaning up all old assets to remove deleted packages."
+      #       gh release view "$TAG" --repo "$REPO" --json assets -q '.assets[].name' \
+      #         | while read -r name; do
+      #             [[ -n "$name" ]] || continue
+      #             gh release delete-asset "$TAG" "$name" --repo "$REPO" -y || true
+      #           done
+      #     else
+      #       echo "Creating release $TAG."
+      #       gh release create "$TAG" --repo "$REPO" \
+      #         --title "Arch Package Repository" \
+      #         --notes "Auto-built pacman repository."
+      #     fi
 
-          echo "Uploading current assets."
-          gh release upload "$TAG" output/* --repo "$REPO" --clobber
+      #     echo "Uploading current assets."
+      #     gh release upload "$TAG" output/* --repo "$REPO" --clobber
 
-          RELEASE_NOTES=$(cat <<EOF
-          ### 📦 Repository Update Summary (Matrix Build)
+      #     RELEASE_NOTES=$(cat <<EOF
+      #     ### 📦 Repository Update Summary (Matrix Build)
 
-          **Last Updated:** $(date -u '+%Y-%m-%d %H:%M UTC')
+      #     **Last Updated:** $(date -u '+%Y-%m-%d %H:%M UTC')
 
-          #### 🟢 Newly Built Packages
-          ${{ env.BUILT_LOG }}
+      #     #### 🟢 Newly Built Packages
+      #     ${{ env.BUILT_LOG }}
 
-          #### 🟡 Cached / Skipped Packages
-          ${{ env.SKIPPED_LOG }}
+      #     #### 🟡 Cached / Skipped Packages
+      #     ${{ env.SKIPPED_LOG }}
 
-          #### 🔴 Failed Packages
-          ${{ env.FAILED_LOG }}
+      #     #### 🔴 Failed Packages
+      #     ${{ env.FAILED_LOG }}
 
-          ---
-          *Automated Scatter-Gather build by GitHub Actions.*
-          EOF
-          )
+      #     ---
+      #     *Automated Scatter-Gather build by GitHub Actions.*
+      #     EOF
+      #     )
 
-          gh release edit "$TAG" --repo "$REPO" --notes "$RELEASE_NOTES"
+      #     gh release edit "$TAG" --repo "$REPO" --notes "$RELEASE_NOTES"
