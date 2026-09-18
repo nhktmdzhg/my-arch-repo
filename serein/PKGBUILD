@@ -20,8 +20,11 @@ depends=(
   'gstreamer'
   'gtk4'
   'hicolor-icon-theme'
+  'libgcc'
   'libglvnd'
   'libpulse'
+  'libsoup3'
+  'libstdc++'
   'libx11'
   'libxkbcommon'
   'libxkbcommon-x11'
@@ -60,4 +63,6 @@ package() {
   cd "$srcdir/$pkgname"
   install -d "$pkgdir"
   cp -a -- dist/linux-root/usr "$pkgdir/"
+  install -d "$pkgdir/usr/share/licenses/$pkgname"
+  install -m644 LICENSE-MIT LICENSE-APACHE "$pkgdir/usr/share/licenses/$pkgname/"
 }
