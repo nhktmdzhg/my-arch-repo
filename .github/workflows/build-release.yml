@@ -197,30 +197,65 @@ jobs:
             else
               echo "Build failed for $PKG"
               echo "Triggering fallback mechanism for $PKG..."
-              FALLBACK_SUCCESS=false
+              FALLBACK_CANDIDATES=()
+              PROTECT_NAMES=()
+              RESTORED_COUNT=0
+              declare -A candidate_seen=()
+              add_candidate() {
+                [[ -n "$1" ]] || return 0
+                [[ -n "${candidate_seen[$1]:-}" ]] && return 0
+                candidate_seen["$1"]=1
+                FALLBACK_CANDIDATES+=("$1")
+              }
+
               if [[ -d /tmp/repo-files ]]; then
                 for desc_file in /tmp/repo-files/*/desc; do
                   [[ -f "$desc_file" ]] || continue
                   base_pkg=$(awk '/^%BASE%/{getline; print; exit}' "$desc_file")
                   pkg_name=$(awk '/^%NAME%/{getline; print; exit}' "$desc_file")
                   check_name="${base_pkg:-$pkg_name}"
-                  if [[ "$check_name" == "$PKG" ]]; then
-                    file_name=$(awk '/^%FILENAME%/{getline; print; exit}' "$desc_file")
-                    if [[ -n "$file_name" ]]; then
-                      echo "Restoring $file_name from previous release"
-                      if gh release download "$RELEASE_TAG" --repo "${{ github.repository }}" --dir output --pattern "$file_name"; then
-                        FALLBACK_SUCCESS=true
-                        echo "$PKG" > output/status-failed-$PKG.txt
-                      fi
-                    fi
-                  fi
+                  [[ "$check_name" == "$PKG" ]] || continue
+                  add_candidate "$(awk '/^%FILENAME%/{getline; print; exit}' "$desc_file")"
                 done
               fi
-              if [[ "$FALLBACK_SUCCESS" == "false" ]]; then
-                echo "Fallback failed for $PKG: no previous files found. Gracefully exiting to ignore package."
-                echo "$PKG" > output/status-failed-$PKG.txt
-                exit 0
+
+              RELEASE_ASSETS=""
+              if RELEASE_ASSETS=$(gh release view "$RELEASE_TAG" --repo "${{ github.repository }}" --json assets -q '.assets[].name'); then
+                for pkg_name in $ASSUME_PKGS; do
+                  while IFS= read -r asset; do
+                    [[ "$asset" == "$pkg_name"-*.pkg.tar.zst ]] && add_candidate "$asset"
+                  done <<< "$RELEASE_ASSETS"
+                done
+              else
+                echo "::warning::Cannot list release assets while restoring $PKG; assets will be protected from deletion in this run."
+                printf '*\n' > output/protect-all.txt
               fi
+              if [[ -z "$ASSUME_PKGS" ]]; then
+                echo "::warning::Cannot determine the package names of $PKG; assets will be protected from deletion in this run."
+                printf '*\n' > output/protect-all.txt
+              fi
+
+              for file_name in "${FALLBACK_CANDIDATES[@]}"; do
+                echo "Restoring $file_name from previous release"
+                if gh release download "$RELEASE_TAG" --repo "${{ github.repository }}" --dir output --pattern "$file_name"; then
+                  RESTORED_COUNT=$(( RESTORED_COUNT + 1 ))
+                else
+                  echo "::warning::Could not restore $file_name for $PKG; it will be kept in the release."
+                  PROTECT_NAMES+=("$file_name")
+                fi
+              done
+
+              if (( ${#PROTECT_NAMES[@]} > 0 )); then
+                printf '%s\n' "${PROTECT_NAMES[@]}" > "output/protect-$PKG.txt"
+              fi
+              if (( RESTORED_COUNT > 0 )); then
+                echo "Restored $RESTORED_COUNT file(s) of $PKG from the previous release"
+                echo "$PKG" > "output/status-restored-$PKG.txt"
+              else
+                echo "Fallback failed for $PKG: no previous files found. Gracefully exiting to ignore package."
+                echo "$PKG" > "output/status-failed-$PKG.txt"
+              fi
+              exit 0
             fi
           fi
 
@@ -280,14 +315,25 @@ jobs:
 
           status_built_files=( status-built-*.txt )
           status_skipped_files=( status-skipped-*.txt )
+          status_restored_files=( status-restored-*.txt )
           status_failed_files=( status-failed-*.txt )
+          protect_files=( protect-*.txt )
           BUILT=""
           SKIPPED=""
+          RESTORED=""
           FAILED=""
           if (( ${#status_built_files[@]} > 0 )); then BUILT=$(cat "${status_built_files[@]}"); fi
           if (( ${#status_skipped_files[@]} > 0 )); then SKIPPED=$(cat "${status_skipped_files[@]}"); fi
+          if (( ${#status_restored_files[@]} > 0 )); then RESTORED=$(cat "${status_restored_files[@]}"); fi
           if (( ${#status_failed_files[@]} > 0 )); then FAILED=$(cat "${status_failed_files[@]}"); fi
-          rm -f status-*.txt
+
+          declare -A PROTECTED=()
+          if (( ${#protect_files[@]} > 0 )); then
+            while IFS= read -r protected_name; do
+              [[ -n "$protected_name" ]] && PROTECTED["$protected_name"]=1
+            done < <(cat "${protect_files[@]}")
+          fi
+          rm -f status-*.txt protect-*.txt
 
           if [[ -z "$BUILT" ]]; then
             echo "has_new_changes=false" >> "$GITHUB_OUTPUT"
@@ -336,6 +382,26 @@ jobs:
             MISSING_ASSETS=()
           fi
 
+          if (( ${#PROTECTED[@]} > 0 )); then
+            kept_protected=()
+            deletable=()
+            for asset in "${STALE_ASSETS[@]}"; do
+              if [[ -n "${PROTECTED[$asset]:-}" || -n "${PROTECTED["*"]:-}" ]]; then
+                kept_protected+=("$asset")
+              else
+                deletable+=("$asset")
+              fi
+            done
+            STALE_ASSETS=("${deletable[@]}")
+            if (( ${#kept_protected[@]} > 0 )); then
+              echo "Keeping assets of packages whose build failed: ${kept_protected[*]}"
+            fi
+            REPO_DRIFT=false
+            if (( ${#STALE_ASSETS[@]} > 0 || ${#MISSING_ASSETS[@]} > 0 )); then
+              REPO_DRIFT=true
+            fi
+          fi
+
           echo "drift=$REPO_DRIFT stale=${#STALE_ASSETS[@]} missing=${#MISSING_ASSETS[@]}"
           if (( ${#MISSING_ASSETS[@]} > 0 )); then
             echo "Not in the release yet (will be uploaded): ${MISSING_ASSETS[*]}"
@@ -354,10 +420,12 @@ jobs:
 
           FORMATTED_BUILT=$(echo "$BUILT" | sed '/^$/d' | sed 's/^/- 🟢 /')
           FORMATTED_SKIPPED=$(echo "$SKIPPED" | sed '/^$/d' | sed 's/^/- 🟡 /')
-          FORMATTED_FAILED=$(echo "$FAILED" | sed '/^$/d' | sed 's/^/- 🔴 /' | sed 's/$/ (Restored via Fallback)/')
+          FORMATTED_RESTORED=$(echo "$RESTORED" | sed '/^$/d' | sed 's/^/- 🟠 /' | sed 's/$/ (kept previous build, current build failed)/')
+          FORMATTED_FAILED=$(echo "$FAILED" | sed '/^$/d' | sed 's/^/- 🔴 /' | sed 's/$/ (dropped: build failed and nothing to restore)/')
 
           [[ -z "$FORMATTED_BUILT" ]] && FORMATTED_BUILT="- None"
           [[ -z "$FORMATTED_SKIPPED" ]] && FORMATTED_SKIPPED="- None"
+          [[ -z "$FORMATTED_RESTORED" ]] && FORMATTED_RESTORED="- None"
           [[ -z "$FORMATTED_FAILED" ]] && FORMATTED_FAILED="- None"
 
           {
@@ -366,6 +434,9 @@ jobs:
             echo "EOF"
             echo "SKIPPED_LOG<<EOF"
             echo "$FORMATTED_SKIPPED"
+            echo "EOF"
+            echo "RESTORED_LOG<<EOF"
+            echo "$FORMATTED_RESTORED"
             echo "EOF"
             echo "FAILED_LOG<<EOF"
             echo "$FORMATTED_FAILED"
@@ -431,6 +502,9 @@ jobs:
 
           #### 🟡 Cached / Skipped Packages
           ${{ env.SKIPPED_LOG }}
+
+          #### 🟠 Kept Previous Build (build failed, previous version reused)
+          ${{ env.RESTORED_LOG }}
 
           #### 🔴 Failed Packages
           ${{ env.FAILED_LOG }}
