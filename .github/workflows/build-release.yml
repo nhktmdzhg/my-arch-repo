@@ -12,7 +12,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-repo
@@ -124,20 +124,32 @@ jobs:
           mkdir -p output /tmp/repo-files /tmp/repo-db
 
           echo "Fetching database metadata..."
-          if gh release download "$RELEASE_TAG" --repo "${{ github.repository }}" --dir /tmp/repo-db --pattern "${REPO_DB_NAME}.files.tar.gz" 2>/dev/null; then
-            tar -xzf "/tmp/repo-db/${REPO_DB_NAME}.files.tar.gz" -C /tmp/repo-files 2>/dev/null || true
+          if gh release download "$RELEASE_TAG" --repo "${{ github.repository }}" --dir /tmp/repo-db --pattern "${REPO_DB_NAME}.files.tar.gz"; then
+            if ! tar -xzf "/tmp/repo-db/${REPO_DB_NAME}.files.tar.gz" -C /tmp/repo-files; then
+              echo "::warning::Cannot extract ${REPO_DB_NAME}.files.tar.gz; every package will be treated as needing a rebuild."
+            fi
+          else
+            echo "::warning::No ${REPO_DB_NAME}.files.tar.gz asset in release '$RELEASE_TAG'; every package will be treated as needing a rebuild."
           fi
 
           echo "Checking status for $PKG"
+          VCS_PREPASS_OK=true
           if grep -q 'pkgver()' "$PKG/PKGBUILD"; then
-            sudo -u builder bash -lc "cd '$GITHUB_WORKSPACE/$PKG' && makepkg -od --noprepare --skipinteg" >/dev/null 2>&1 || true
+            if ! sudo -u builder bash -lc "cd '$GITHUB_WORKSPACE/$PKG' && makepkg -od --noprepare --skipinteg"; then
+              echo "::warning::pkgver() pre-pass failed for $PKG; forcing a rebuild because the cached version cannot be trusted."
+              VCS_PREPASS_OK=false
+            fi
           fi
 
-          EXPECTED_PKGS=$(sudo -u builder bash -lc "cd '$GITHUB_WORKSPACE/$PKG' && makepkg --packagelist 2>/dev/null" || true)
+          EXPECTED_PKGS=""
+          if ! EXPECTED_PKGS=$(sudo -u builder bash -lc "cd '$GITHUB_WORKSPACE/$PKG' && makepkg --packagelist"); then
+            echo "::warning::makepkg --packagelist failed for $PKG; forcing a rebuild."
+            EXPECTED_PKGS=""
+          fi
           EXPECTED_PKGS="${EXPECTED_PKGS//:/.}"
 
           NEEDS_BUILD=false
-          if [[ -z "$EXPECTED_PKGS" ]]; then
+          if [[ "$VCS_PREPASS_OK" != "true" || -z "$EXPECTED_PKGS" ]]; then
             NEEDS_BUILD=true
           else
             for pkg_path in $EXPECTED_PKGS; do
@@ -153,8 +165,8 @@ jobs:
             echo "Package $PKG is up to date. Fetching specific cache from release."
             for pkg_path in $EXPECTED_PKGS; do
               pkg_basename=$(basename "$pkg_path")
-              if ! gh release download "$RELEASE_TAG" --repo "${{ github.repository }}" --dir output --pattern "$pkg_basename" 2>/dev/null; then
-                echo "Failed to fetch $pkg_basename cache. Forcing rebuild."
+              if ! gh release download "$RELEASE_TAG" --repo "${{ github.repository }}" --dir output --pattern "$pkg_basename"; then
+                echo "::warning::Failed to fetch $pkg_basename cache. Forcing rebuild."
                 NEEDS_BUILD=true
                 break
               fi
@@ -175,7 +187,9 @@ jobs:
               echo "Package is pacman: adding --skipinteg to makepkg arguments"
               PARU_FLAGS="$PARU_FLAGS --mflags --skipinteg"
             fi
-            sudo -u builder bash -lc "cd '$GITHUB_WORKSPACE/$PKG' && paru $PARU_FLAGS '$GITHUB_WORKSPACE/$PKG'" || true
+            if ! sudo -u builder bash -lc "cd '$GITHUB_WORKSPACE/$PKG' && paru $PARU_FLAGS '$GITHUB_WORKSPACE/$PKG'"; then
+              echo "::warning::paru exited non-zero for $PKG; checking whether package files were produced anyway."
+            fi
             if ls "$PKG"/*.pkg.tar.zst >/dev/null 2>&1; then
               mv "$PKG"/*.pkg.tar.zst output/
               echo "Build OK: $PKG"
@@ -194,7 +208,7 @@ jobs:
                     file_name=$(awk '/^%FILENAME%/{getline; print; exit}' "$desc_file")
                     if [[ -n "$file_name" ]]; then
                       echo "Restoring $file_name from previous release"
-                      if gh release download "$RELEASE_TAG" --repo "${{ github.repository }}" --dir output --pattern "$file_name" 2>/dev/null; then
+                      if gh release download "$RELEASE_TAG" --repo "${{ github.repository }}" --dir output --pattern "$file_name"; then
                         FALLBACK_SUCCESS=true
                         echo "$PKG" > output/status-failed-$PKG.txt
                       fi
@@ -231,6 +245,8 @@ jobs:
   publish:
     needs: [prepare, build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     container:
       image: ghcr.io/archlinux/archlinux:latest
     steps:
@@ -246,6 +262,8 @@ jobs:
 
       - name: Generate fresh pacman database & Prepare Release Notes
         id: generate
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           cd output
@@ -260,9 +278,15 @@ jobs:
 
           echo "has_packages=true" >> "$GITHUB_OUTPUT"
 
-          BUILT=$(cat status-built-*.txt 2>/dev/null || true)
-          SKIPPED=$(cat status-skipped-*.txt 2>/dev/null || true)
-          FAILED=$(cat status-failed-*.txt 2>/dev/null || true)
+          status_built_files=( status-built-*.txt )
+          status_skipped_files=( status-skipped-*.txt )
+          status_failed_files=( status-failed-*.txt )
+          BUILT=""
+          SKIPPED=""
+          FAILED=""
+          if (( ${#status_built_files[@]} > 0 )); then BUILT=$(cat "${status_built_files[@]}"); fi
+          if (( ${#status_skipped_files[@]} > 0 )); then SKIPPED=$(cat "${status_skipped_files[@]}"); fi
+          if (( ${#status_failed_files[@]} > 0 )); then FAILED=$(cat "${status_failed_files[@]}"); fi
           rm -f status-*.txt
 
           if [[ -z "$BUILT" ]]; then
@@ -273,6 +297,60 @@ jobs:
 
           echo "Generating clean database from active packages only."
           repo-add "${REPO_DB_NAME}.db.tar.gz" "${pkgs[@]}"
+
+          # Drift: asset .pkg.tar.zst trên Release phải khớp đúng tập file trong output/.
+          compute_repo_drift() {
+            local -A have=() rel=()
+            local name asset
+            STALE_ASSETS=()
+            MISSING_ASSETS=()
+            for name in "$@"; do
+              have["$name"]=1
+            done
+            while IFS= read -r asset; do
+              [[ -n "$asset" ]] || continue
+              [[ "$asset" == *.pkg.tar.zst ]] || continue
+              rel["$asset"]=1
+              if [[ -z "${have[$asset]:-}" ]]; then
+                STALE_ASSETS+=("$asset")
+              fi
+            done
+            for name in "$@"; do
+              if [[ -z "${rel[$name]:-}" ]]; then
+                MISSING_ASSETS+=("$name")
+              fi
+            done
+            REPO_DRIFT=false
+            if (( ${#STALE_ASSETS[@]} > 0 || ${#MISSING_ASSETS[@]} > 0 )); then
+              REPO_DRIFT=true
+            fi
+          }
+
+          release_assets=""
+          if release_assets=$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' 2>/dev/null); then
+            compute_repo_drift "${pkgs[@]}" <<< "$release_assets"
+          else
+            echo "::warning::Release '$RELEASE_TAG' cannot be read; forcing a publish so it is created or repaired."
+            REPO_DRIFT=true
+            STALE_ASSETS=()
+            MISSING_ASSETS=()
+          fi
+
+          echo "drift=$REPO_DRIFT stale=${#STALE_ASSETS[@]} missing=${#MISSING_ASSETS[@]}"
+          if (( ${#MISSING_ASSETS[@]} > 0 )); then
+            echo "::warning::Package files missing from the release and will be re-uploaded: ${MISSING_ASSETS[*]}"
+          fi
+          if (( ${#STALE_ASSETS[@]} > 0 )); then
+            echo "Assets to delete (no longer part of the repository): ${STALE_ASSETS[*]}"
+          fi
+          echo "has_drift=$REPO_DRIFT" >> "$GITHUB_OUTPUT"
+          {
+            echo "STALE_ASSETS<<EOF"
+            if (( ${#STALE_ASSETS[@]} > 0 )); then
+              printf '%s\n' "${STALE_ASSETS[@]}"
+            fi
+            echo "EOF"
+          } >> "$GITHUB_ENV"
 
           FORMATTED_BUILT=$(echo "$BUILT" | sed '/^$/d' | sed 's/^/- 🟢 /')
           FORMATTED_SKIPPED=$(echo "$SKIPPED" | sed '/^$/d' | sed 's/^/- 🟡 /')
@@ -295,21 +373,17 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Publish to GitHub Release
-        if: steps.generate.outputs.has_packages == 'true' && steps.generate.outputs.has_new_changes == 'true'
+        if: ${{ steps.generate.outputs.has_packages == 'true' && (steps.generate.outputs.has_new_changes == 'true' || steps.generate.outputs.has_drift == 'true') }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          shopt -s nullglob
           REPO="${{ github.repository }}"
           TAG="${{ env.RELEASE_TAG }}"
 
           if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-            echo "Cleaning up all old assets to remove deleted packages."
-            gh release view "$TAG" --repo "$REPO" --json assets -q '.assets[].name' \
-              | while read -r name; do
-                  [[ -n "$name" ]] || continue
-                  gh release delete-asset "$TAG" "$name" --repo "$REPO" -y || true
-                done
+            echo "Release $TAG exists; uploading refreshed assets."
           else
             echo "Creating release $TAG."
             gh release create "$TAG" --repo "$REPO" \
@@ -317,8 +391,35 @@ jobs:
               --notes "Auto-built pacman repository."
           fi
 
-          echo "Uploading current assets."
-          gh release upload "$TAG" output/* --repo "$REPO" --clobber
+          pkg_assets=( output/*.pkg.tar.zst )
+          if (( ${#pkg_assets[@]} == 0 )); then
+            echo "::error::No package files in output/; refusing to publish."
+            exit 1
+          fi
+          echo "Uploading package files: ${#pkg_assets[@]} file(s)."
+          gh release upload "$TAG" "${pkg_assets[@]}" --repo "$REPO" --clobber
+
+          db_assets=( output/"${REPO_DB_NAME}".db* output/"${REPO_DB_NAME}".files* )
+          if (( ${#db_assets[@]} == 0 )); then
+            echo "::error::No pacman database files in output/; refusing to publish a repository without a database."
+            exit 1
+          fi
+          echo "Uploading pacman databases: ${db_assets[*]}"
+          gh release upload "$TAG" "${db_assets[@]}" --repo "$REPO" --clobber
+
+          if [[ -n "${STALE_ASSETS:-}" ]]; then
+            echo "Deleting assets that are no longer part of the repository:"
+            while IFS= read -r stale; do
+              [[ -n "$stale" ]] || continue
+              echo "  - $stale"
+              if ! gh release delete-asset "$TAG" "$stale" --repo "$REPO" -y; then
+                echo "::error::Cannot delete stale asset $stale; the next run will retry."
+                exit 1
+              fi
+            done <<< "$STALE_ASSETS"
+          else
+            echo "No stale assets to delete."
+          fi
 
           RELEASE_NOTES=$(cat <<EOF
           ### 📦 Repository Update Summary (Matrix Build)

@@ -40,12 +40,60 @@ jobs:
           STATUS_DIR="/tmp/sync-status"
           AUR_TMP="/tmp/aur-clone"
           LOG_DIR="/tmp/sync-logs"
-          rm -rf "$STATUS_DIR" "$AUR_TMP" "$LOG_DIR" /tmp/cachyos-pkgbuilds
-          mkdir -p "$STATUS_DIR/synced" "$STATUS_DIR/failed" "$STATUS_DIR/skipped" "$AUR_TMP" "$LOG_DIR"
+          CACHYOS_TMP="/tmp/cachyos-pkgbuilds"
+          STAGE_ROOT="$PWD/.sync-staging"
+
+          rm -rf "$STATUS_DIR" "$AUR_TMP" "$LOG_DIR" "$CACHYOS_TMP" "$STAGE_ROOT"
+          mkdir -p "$STATUS_DIR/synced" "$STATUS_DIR/failed" "$STATUS_DIR/skipped" "$AUR_TMP" "$LOG_DIR" "$STAGE_ROOT"
+
+          clone_with_retry() {
+            local url="$1" target="$2" attempt
+            for attempt in 1 2 3; do
+              rm -rf "$target"
+              if GIT_TERMINAL_PROMPT=0 git clone --depth=1 "$url" "$target"; then
+                return 0
+              fi
+              echo "Clone attempt $attempt/3 failed for $url"
+              if (( attempt < 3 )); then sleep 5; fi
+            done
+            return 1
+          }
+
+          # Copy $1 vào thư mục gói $2 qua staging nằm trong chính repo, để source cũ chỉ bị
+          # thay thế khi bản copy đã hoàn tất và hợp lệ.
+          sync_pkg_tree() {
+            local src="$1" pkg="$2" stage="$STAGE_ROOT/$2"
+            rm -rf "$stage"
+            if ! mkdir -p "$stage"; then
+              echo "::error::Cannot create staging directory $stage"
+              return 1
+            fi
+            if ! rsync -a --exclude='.git' "$src/" "$stage/"; then
+              echo "::error::rsync failed for $pkg (source: $src); existing sources were left untouched"
+              rm -rf "$stage"
+              return 1
+            fi
+            if [[ ! -f "$stage/PKGBUILD" ]]; then
+              echo "::error::Staged copy of $pkg has no PKGBUILD (source: $src); existing sources were left untouched"
+              rm -rf "$stage"
+              return 1
+            fi
+            if ! rm -rf "$pkg"; then
+              echo "::error::Cannot remove existing directory $pkg"
+              rm -rf "$stage"
+              return 1
+            fi
+            if ! mv "$stage" "$pkg"; then
+              echo "::error::Cannot move the staged tree of $pkg into place"
+              return 1
+            fi
+            return 0
+          }
 
           echo "Cloning CachyOS-PKGBUILDS repository..."
-          if ! git clone --depth=1 "https://github.com/CachyOS/CachyOS-PKGBUILDS.git" /tmp/cachyos-pkgbuilds >/tmp/cachyos-clone.log 2>&1; then
-            echo "::warning::Failed to clone CachyOS repository"
+          if ! clone_with_retry "https://github.com/CachyOS/CachyOS-PKGBUILDS.git" "$CACHYOS_TMP"; then
+            echo "::error::CachyOS-PKGBUILDS could not be cloned; aborting so no package is silently replaced by an AUR version."
+            exit 1
           fi
 
           mapfile -t VALID_PKGS < <(sed 's/#.*//' packages.txt | awk '{print $1}' | grep -v '^$' | sed 's/^local://')
@@ -60,6 +108,10 @@ jobs:
             if ! printf '%s\n' "${VALID_PKGS[@]}" | grep -q -x "$dir"; then
               echo "Removing obsolete package directory: $dir"
               rm -rf "$dir"
+              if [[ -e "$dir" ]]; then
+                echo "::error::Obsolete directory $dir could not be removed"
+                exit 1
+              fi
               REMOVED+=("$dir")
             fi
           done
@@ -79,32 +131,33 @@ jobs:
               pkg="$pkg_entry"
               
               echo "Checking CachyOS-PKGBUILDS for $pkg..."
-              cachyos_dir=$(find /tmp/cachyos-pkgbuilds -mindepth 1 -maxdepth 4 -type d -name "$pkg" -not -path "*/\.git/*" -print -quit 2>/dev/null)
+              cachyos_dir=$(find "$CACHYOS_TMP" -mindepth 1 -maxdepth 4 -type d -name "$pkg" -not -path "*/.git/*" -exec test -f '{}/PKGBUILD' ';' -print -quit 2>/dev/null)
 
               if [[ -n "$cachyos_dir" ]]; then
                 echo "Found $pkg in CachyOS-PKGBUILDS"
                 echo "Syncing files for $pkg from CachyOS"
-                mkdir -p "$pkg"
-                find "$pkg" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-                rsync -a --exclude='.git' "$cachyos_dir/" "$pkg/"
+                if ! sync_pkg_tree "$cachyos_dir" "$pkg"; then
+                  touch "$STATUS_DIR/failed/$pkg"
+                  exit 0
+                fi
                 touch "$STATUS_DIR/synced/$pkg"
                 exit 0
               fi
 
               echo "Not found in CachyOS. Cloning $pkg from AUR..."
               clone_pkg_dir="$AUR_TMP/$pkg"
-              rm -rf "$clone_pkg_dir"
 
-              if ! git clone --depth=1 "https://aur.archlinux.org/${pkg}.git" "$clone_pkg_dir" 2>&1; then
-                echo "::warning::Clone failed for $pkg"
+              if ! clone_with_retry "https://aur.archlinux.org/${pkg}.git" "$clone_pkg_dir"; then
+                echo "::warning::Clone failed for $pkg after 3 attempts"
                 touch "$STATUS_DIR/failed/$pkg"
                 exit 0
               fi
 
               echo "Syncing files for $pkg from AUR"
-              mkdir -p "$pkg"
-              find "$pkg" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-              rsync -a --exclude='.git' "$clone_pkg_dir/" "$pkg/"
+              if ! sync_pkg_tree "$clone_pkg_dir" "$pkg"; then
+                touch "$STATUS_DIR/failed/$pkg"
+                exit 0
+              fi
               rm -rf "$clone_pkg_dir"
               touch "$STATUS_DIR/synced/$pkg"
             ) > "$LOG_DIR/$(echo "$raw_line" | sed 's/#.*//' | xargs | tr '/:' '_').log" 2>&1 &
@@ -121,12 +174,27 @@ jobs:
             echo "::endgroup::"
           done
 
-          SYNCED=($(ls -1 "$STATUS_DIR/synced" 2>/dev/null || true))
-          FAILED=($(ls -1 "$STATUS_DIR/failed" 2>/dev/null || true))
+          shopt -s nullglob
+          sync_status_files=( "$STATUS_DIR/synced"/* )
+          fail_status_files=( "$STATUS_DIR/failed"/* )
+          SYNCED=()
+          FAILED=()
+          for status_file in "${sync_status_files[@]}"; do
+            SYNCED+=("$(basename "$status_file")")
+          done
+          for status_file in "${fail_status_files[@]}"; do
+            FAILED+=("$(basename "$status_file")")
+          done
+
+          rm -rf "$STAGE_ROOT"
+          if [[ -e "$STAGE_ROOT" ]]; then
+            echo "::error::Staging directory $STAGE_ROOT still exists; refusing to open a pull request."
+            exit 1
+          fi
 
           find . -mindepth 2 -name ".gitignore" -delete
           find . -mindepth 2 -name ".git" -exec rm -rf {} +
-          rm -rf "$STATUS_DIR" "$AUR_TMP" "$LOG_DIR" /tmp/cachyos-pkgbuilds
+          rm -rf "$STATUS_DIR" "$AUR_TMP" "$LOG_DIR" "$CACHYOS_TMP"
 
           echo "synced=${SYNCED[*]:-}" >> "$GITHUB_OUTPUT"
           echo "failed=${FAILED[*]:-}" >> "$GITHUB_OUTPUT"
