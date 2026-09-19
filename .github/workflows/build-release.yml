@@ -338,7 +338,7 @@ jobs:
 
           echo "drift=$REPO_DRIFT stale=${#STALE_ASSETS[@]} missing=${#MISSING_ASSETS[@]}"
           if (( ${#MISSING_ASSETS[@]} > 0 )); then
-            echo "::warning::Package files missing from the release and will be re-uploaded: ${MISSING_ASSETS[*]}"
+            echo "Not in the release yet (will be uploaded): ${MISSING_ASSETS[*]}"
           fi
           if (( ${#STALE_ASSETS[@]} > 0 )); then
             echo "Assets to delete (no longer part of the repository): ${STALE_ASSETS[*]}"
