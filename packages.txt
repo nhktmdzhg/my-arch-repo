@@ -47,7 +47,6 @@ ttf-vietnamese-tcvn3
 ttf-vietnamese-vni
 ventoy
 vscodium
-wezterm-git
 xclicker
 xmousepasteblock
 yuzufox-git
