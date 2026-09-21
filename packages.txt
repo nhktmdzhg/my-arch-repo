@@ -41,7 +41,6 @@ rustdesk
 scx-manager
 serein
 snapper-rollback
-teamviewer
 ttf-ms-win11-base
 ttf-vietnamese-tcvn3
 ttf-vietnamese-vni
