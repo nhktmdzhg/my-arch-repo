@@ -14,6 +14,8 @@ fcitx5-lotus-git
 icu74
 ksuperkey
 lib32-nvidia-utils
+lidm
+lidm-systemd
 lightworks
 localsend
 lua-pam-git
