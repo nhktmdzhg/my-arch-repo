@@ -49,7 +49,6 @@ vscodium
 xclicker
 xmousepasteblock
 yuzufox-git
-yserver
 zalo-for-linux-git
 
 #####
