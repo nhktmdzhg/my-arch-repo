@@ -32,6 +32,7 @@ pacman
 paru
 physlock
 picom-nhktmdzhg-git
+printcraft
 pvpn-go
 pwvucontrol
 rate-mirrors
