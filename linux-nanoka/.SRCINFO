@@ -1,7 +1,7 @@
 pkgbase = linux-nanoka
 	pkgdesc = Linux EEVDF + LTO + AutoFDO + Propeller Cachy Sauce Kernel by CachyOS with other patches and improvements. Build by Nanoka with love.
 	pkgver = 7.3.0
-	pkgrel = 2
+	pkgrel = 4
 	url = https://github.com/CachyOS/linux-cachyos
 	arch = x86_64
 	license = GPL-2.0-only
@@ -31,18 +31,19 @@ pkgbase = linux-nanoka
 	options = !strip
 	options = !debug
 	options = !lto
-	source = https://github.com/CachyOS/linux/releases/download/cachyos-7.3.0-2/cachyos-7.3.0-2.tar.gz
-	source = https://github.com/CachyOS/linux/releases/download/cachyos-7.3.0-2/cachyos-7.3.0-2.tar.gz.asc
+	source = https://github.com/CachyOS/linux/releases/download/cachyos-7.3.0-4/cachyos-7.3.0-4.tar.gz
+	source = https://github.com/CachyOS/linux/releases/download/cachyos-7.3.0-4/cachyos-7.3.0-4.tar.gz.asc
 	source = config
 	source = https://raw.githubusercontent.com/cachyos/kernel-patches/master/7.3/misc/dkms-clang.patch
 	source = git+https://github.com/cachyos/zfs.git#commit=fb48c76e17d3e0092fbba430a9eec1960e1b9961
 	source = https://download.nvidia.com/XFree86/NVIDIA-kernel-module-source/NVIDIA-kernel-module-source-615.78.08.tar.xz
 	source = https://raw.githubusercontent.com/cachyos/kernel-patches/master/7.3/misc/nvidia/0001-fix-dsc-correct-RC-parameter-tables-to-match-VESA-DS.patch
 	source = https://raw.githubusercontent.com/cachyos/kernel-patches/master/7.3/misc/nvidia/0002-fix-dp-add-Bigscreen-Beyond-VR-headset-to-WAR-databa.patch
+	source = https://raw.githubusercontent.com/cachyos/kernel-patches/master/7.3/misc/nvidia/0004-Open-sysfs-config-from-the-userspace-root-on-7.3.patch
 	source = git+https://github.com/aravance/r8125.git
 	validpgpkeys = E18447AC260021D31F3FF6C4C8A2A4774B8B63C4
 	validpgpkeys = E8B9AA39F054E30E8290D492C3C4820857F654FE
-	b2sums = de863b0d5ab80a456292e154e70c6ef5108740f15218da96e057bea8814ba0c186d3752a1fae20bb80a3e0dc7620d3a34e4a18b66385b3e634185e16faf9d8e9
+	b2sums = d90b9a609d930cf596022050014ef75e11f3b9378fb51be7763743bc15b10d31caa8d48c59149ed2aea28853aae1ec6d7e68a8ce441b1bd014c9897cbeb8dba5
 	b2sums = SKIP
 	b2sums = ecd0a4058542a8cffa8d25407f2b7022f9f10693a9202383641cc7fd509ff5f1b8825b76814b2f2370297d3f0af20f25985e91d09f54c5900d3a77be72c80c33
 	b2sums = c992567bd7dd8553432be496ffa1c17e2f5ebe9c7edb51945cf977e1b742dd6517c210d8843bb82744ca705efd07f8027cd7dde41b50215ebd707a34aa81462e
@@ -50,6 +51,7 @@ pkgbase = linux-nanoka
 	b2sums = 7a73f396965056bf7ca8506e37cb7719bfcc2a79e8c44a7477a038cf39ca7630c6de96b42d8d56e23640d40b80f6fa8dde20bdb843832913de3d0f93f650ce68
 	b2sums = 43386fb36a975bd5215d477bd2e11d91adbdc20393b9898788ee5734834aaeb6af83e8e493a0d20f6bd7fd6ecbff124f7877ede44c3beafb007b9c7effa44fe6
 	b2sums = 8106fe252012ca17f32c56877a98e047befe15c71adc0e6c97927760e08bfe7f78a8b71721470564514328c470f26345ec81796bd9dedd47a6c330d57205fae8
+	b2sums = 4731aa2e4bff627c27f61e9ef31a01bf33611b85085a35859b3ed5c903e9e3457ce78b1a7f471f7253b3c4f51ce8914dc299b36c552067ebbc77db091c90c502
 	b2sums = SKIP
 
 pkgname = linux-nanoka
@@ -68,7 +70,7 @@ pkgname = linux-nanoka
 	provides = NTSYNC-MODULE
 	provides = VHBA-MODULE
 	provides = ADIOS-MODULE
-	provides = linux-cachyos-lto=7.3.0-2
+	provides = linux-cachyos-lto=7.3.0-4
 	replaces = linux-cachyos-lto
 
 pkgname = linux-nanoka-headers
@@ -87,20 +89,20 @@ pkgname = linux-nanoka-headers
 	depends = llvm
 	depends = lld
 	provides = LINUX-HEADERS
-	provides = linux-cachyos-lto-headers=7.3.0-2
+	provides = linux-cachyos-lto-headers=7.3.0-4
 	replaces = linux-cachyos-lto-headers
 
 pkgname = linux-nanoka-zfs
 	pkgdesc = zfs module for the Linux EEVDF + LTO + AutoFDO + Propeller Cachy Sauce Kernel by CachyOS with other patches and improvements. Build by Nanoka with love. kernel
 	license = CDDL
 	depends = pahole
-	depends = linux-nanoka=7.3.0-2
+	depends = linux-nanoka=7.3.0-4
 	provides = ZFS-MODULE
 
 pkgname = linux-nanoka-nvidia-open
 	pkgdesc = nvidia open modules of 615.78.08 driver for the linux-nanoka kernel
 	license = MIT AND GPL-2.0-only
-	depends = linux-nanoka=7.3.0-2
+	depends = linux-nanoka=7.3.0-4
 	depends = nvidia-utils=615.78.08
 	depends = libglvnd
 	provides = NVIDIA-MODULE
@@ -109,4 +111,4 @@ pkgname = linux-nanoka-nvidia-open
 pkgname = linux-nanoka-r8125
 	pkgdesc = r8125 modules for the linux-nanoka kernel
 	license = GPL-2.0-only
-	depends = linux-nanoka=7.3.0-2
+	depends = linux-nanoka=7.3.0-4
