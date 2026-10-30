@@ -55,7 +55,7 @@
 : "${_per_gov:=no}"
 
 ### Enable TCP_CONG_BBR3
-: "${_tcp_bbr3:=no}"
+: "${_tcp_bbr3:=yes}"
 
 ### Running with a 1000HZ, 750Hz, 600 Hz, 500Hz, 300Hz, 250Hz and 100Hz tick rate
 : "${_HZ_ticks:=1000}"
@@ -78,7 +78,7 @@
 # 'madvise' - madvise, prevent applications from allocating more memory resources than necessary
 # More infos here:
 # https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/performance_tuning_guide/sect-red_hat_enterprise_linux-performance_tuning_guide-configuring_transparent_huge_pages
-: "${_hugepage:=always}"
+: "${_hugepage:=madvise}"
 
 # CPU compiler optimizations - Defaults to native if left empty
 # - "native" (use compiler autodetection)
@@ -109,7 +109,7 @@
 # scheme used by CONFIG_CFI_CLANG. kCFI doesn't require LTO, doesn't
 # alter function references to point to a jump table, and won't break
 # function address equality.
-: "${_use_kcfi:=no}"
+: "${_use_kcfi:=yes}"
 
 # Build the zfs module in to the kernel
 # WARNING: The ZFS module doesn't build with selected RT sched due to licensing issues.
@@ -175,12 +175,12 @@ fi
 
 pkgbase="linux-nanoka"
 _major=7.3
-_minor=0
+_minor=1
 #_minorc=$((_minor+1))
 #_rcver=rc8
 pkgver=${_major}.${_minor}
-_tagrel=4
-pkgrel=4
+_tagrel=1
+pkgrel=1
 _srcname=cachyos-${_major}.${_minor}-${_tagrel}
 pkgdesc='Linux EEVDF + LTO + AutoFDO + Propeller Cachy Sauce Kernel by CachyOS with other patches and improvements. Build by Nanoka with love.'
 _kernver="$pkgver-$pkgrel"
@@ -831,7 +831,7 @@ for _p in "${pkgname[@]}"; do
 done
 
 
-b2sums=('d90b9a609d930cf596022050014ef75e11f3b9378fb51be7763743bc15b10d31caa8d48c59149ed2aea28853aae1ec6d7e68a8ce441b1bd014c9897cbeb8dba5'
+b2sums=('b744477e1202ae7c63020645fdd923625da6edd2bde61d01d9c7755e6d9628fc3fb00e615261f02a5c503d5c890cb9f8e1e9f068aea7ed01fda45b2d64e7216a'
         'SKIP'
         'ecd0a4058542a8cffa8d25407f2b7022f9f10693a9202383641cc7fd509ff5f1b8825b76814b2f2370297d3f0af20f25985e91d09f54c5900d3a77be72c80c33'
         'c992567bd7dd8553432be496ffa1c17e2f5ebe9c7edb51945cf977e1b742dd6517c210d8843bb82744ca705efd07f8027cd7dde41b50215ebd707a34aa81462e'
