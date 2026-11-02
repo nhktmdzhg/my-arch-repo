@@ -40,6 +40,9 @@ pkgbase = linux-nanoka
 	source = https://raw.githubusercontent.com/cachyos/kernel-patches/master/7.3/misc/nvidia/0001-fix-dsc-correct-RC-parameter-tables-to-match-VESA-DS.patch
 	source = https://raw.githubusercontent.com/cachyos/kernel-patches/master/7.3/misc/nvidia/0002-fix-dp-add-Bigscreen-Beyond-VR-headset-to-WAR-databa.patch
 	source = https://raw.githubusercontent.com/cachyos/kernel-patches/master/7.3/misc/nvidia/0004-Open-sysfs-config-from-the-userspace-root-on-7.3.patch
+	source = https://us.download.nvidia.com/XFree86/Linux-x86_64/580.196.07/NVIDIA-Linux-x86_64-580.196.07.run
+	source = https://raw.githubusercontent.com/cachyos/kernel-patches/master/7.3/misc/nvidia-580xx/0001-Enable-atomic-kernel-modesetting-by-default.patch
+	source = https://raw.githubusercontent.com/cachyos/kernel-patches/master/7.3/misc/nvidia-580xx/0002-fix-hw-cursor-kde.patch
 	source = git+https://github.com/aravance/r8125.git
 	validpgpkeys = E18447AC260021D31F3FF6C4C8A2A4774B8B63C4
 	validpgpkeys = E8B9AA39F054E30E8290D492C3C4820857F654FE
@@ -52,6 +55,9 @@ pkgbase = linux-nanoka
 	b2sums = 43386fb36a975bd5215d477bd2e11d91adbdc20393b9898788ee5734834aaeb6af83e8e493a0d20f6bd7fd6ecbff124f7877ede44c3beafb007b9c7effa44fe6
 	b2sums = 8106fe252012ca17f32c56877a98e047befe15c71adc0e6c97927760e08bfe7f78a8b71721470564514328c470f26345ec81796bd9dedd47a6c330d57205fae8
 	b2sums = 4731aa2e4bff627c27f61e9ef31a01bf33611b85085a35859b3ed5c903e9e3457ce78b1a7f471f7253b3c4f51ce8914dc299b36c552067ebbc77db091c90c502
+	b2sums = 69315e16040d32ffa922dfbc0a9dc96625ccc42306e1f724cadeb0f597d434a13e7a391e54ea88949c095c4e29a7f9af220b6722711efb4316c0220fab8fc63f
+	b2sums = 05a3cc4954a37897d08e93e8ea1726fc395a12cfb1509f09560bdcf0ae14ed4ca518fda566a618c92db0fb6573e3ed7d02172dd76a3b145982060e060525365b
+	b2sums = e07c8366bb0c8aece1f917d60719fb365e30d5bf652abcb6bc319a08093b172f717c593f8ee108bdce951de8b4800ea4a01f9525df01e5082990327ca58f2f11
 	b2sums = SKIP
 
 pkgname = linux-nanoka
@@ -107,6 +113,16 @@ pkgname = linux-nanoka-nvidia-open
 	depends = libglvnd
 	provides = NVIDIA-MODULE
 	conflicts = linux-nanoka-nvidia
+	conflicts = linux-nanoka-nvidia-580xx
+
+pkgname = linux-nanoka-nvidia-580xx
+	pkgdesc = nvidia module of 580.196.07 driver for the linux-nanoka kernel
+	license = custom
+	depends = linux-nanoka=7.3.1-1
+	depends = nvidia-580xx-utils=580.196.07
+	depends = libglvnd
+	provides = NVIDIA-MODULE
+	conflicts = linux-nanoka-nvidia-open
 
 pkgname = linux-nanoka-r8125
 	pkgdesc = r8125 modules for the linux-nanoka kernel
