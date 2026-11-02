@@ -107,6 +107,7 @@ pkgname = linux-nanoka-nvidia-open
 	depends = libglvnd
 	provides = NVIDIA-MODULE
 	conflicts = linux-nanoka-nvidia
+	conflicts = linux-nanoka-nvidia-580xx
 
 pkgname = linux-nanoka-r8125
 	pkgdesc = r8125 modules for the linux-nanoka kernel
