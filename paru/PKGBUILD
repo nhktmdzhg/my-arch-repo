@@ -4,17 +4,22 @@ pkgver=2.2.0
 pkgrel=1
 pkgdesc='Feature packed AUR helper'
 url='https://github.com/morganamilo/paru'
-source=("$pkgname-$pkgver.tar.gz::https://github.com/Morganamilo/paru/archive/v$pkgver.tar.gz")
+source=("$pkgname-$pkgver.tar.gz::https://github.com/Morganamilo/paru/archive/v$pkgver.tar.gz"
+        0001-deps-use-latest-alpm-crate-commit.patch
+        0002-fix-aur-package-list-gz-decode.patch)
 backup=("etc/paru.conf")
 arch=('i686' 'pentium4' 'x86_64' 'arm' 'armv7h' 'armv6h' 'aarch64')
 license=('GPL-3.0-or-later')
 makedepends=('cargo')
-depends=('git' 'pacman>=7.1' 'libalpm.so')
+depends=('git' 'pacman' 'libalpm.so>=14')
 optdepends=('bat: colored pkgbuild printing' 'devtools: build in chroot and downloading pkgbuilds')
-sha256sums=('213d55a67605ff69faefa523917fee7168ea5bf143be8cef800fb48c9759f348')
+sha256sums=('213d55a67605ff69faefa523917fee7168ea5bf143be8cef800fb48c9759f348'
+            'c35eb11f6b98dd87d836deb3d54759f3beb14b97587f5e0a71c3cc51c9500f4b'
+            '8b2f7680dfeaa563920837ca96123c3780bffd4386a105b496f90da85b46be8d')
 
 prepare() {
   cd "$pkgname-$pkgver"
+
   cargo fetch --locked --target "$(rustc -vV | sed -n 's|host: ||p')"
 }
 
