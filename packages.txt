@@ -8,9 +8,12 @@ catppuccin-fcitx5-git
 catppuccin-obs-theme-git
 catppuccin-whiskers-bin
 coccoc-browser-stable
+deckcraft
 electron22-bin
 equicord-openasar
 fcitx5-lotus-git
+filmcraft
+gridcraft
 icu74
 ksuperkey
 lib32-nvidia-utils
@@ -42,11 +45,13 @@ rustdesk
 scx-manager
 serein
 snapper-rollback
+soundcraft
 ttf-ms-win11-base
 ttf-vietnamese-tcvn3
 ttf-vietnamese-vni
 ventoy
 vscodium
+wordcraft
 xclicker
 xmousepasteblock
 yuzufox-git
