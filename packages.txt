@@ -17,7 +17,6 @@ gridcraft
 icu74
 ksuperkey
 lib32-nvidia-utils
-lightworks
 localsend
 lua-pam-git
 luajit-lgi
