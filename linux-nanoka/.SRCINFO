@@ -28,7 +28,6 @@ pkgbase = linux-nanoka
 	makedepends = llvm
 	makedepends = lld
 	makedepends = pahole>=1:1.32-2
-	makedepends = git
 	options = !strip
 	options = !debug
 	options = !lto
@@ -36,7 +35,6 @@ pkgbase = linux-nanoka
 	source = https://github.com/CachyOS/linux/releases/download/cachyos-7.3.3-1/cachyos-7.3.3-1.tar.gz.asc
 	source = config
 	source = https://raw.githubusercontent.com/cachyos/kernel-patches/master/7.3/misc/dkms-clang.patch
-	source = git+https://github.com/cachyos/zfs.git#commit=fb48c76e17d3e0092fbba430a9eec1960e1b9961
 	source = https://download.nvidia.com/XFree86/NVIDIA-kernel-module-source/NVIDIA-kernel-module-source-620.70.06.tar.xz
 	source = https://raw.githubusercontent.com/cachyos/kernel-patches/master/7.3/misc/nvidia/0001-fix-dsc-correct-RC-parameter-tables-to-match-VESA-DS.patch
 	source = https://raw.githubusercontent.com/cachyos/kernel-patches/master/7.3/misc/nvidia/0002-fix-dp-add-Bigscreen-Beyond-VR-headset-to-WAR-databa.patch
@@ -48,7 +46,6 @@ pkgbase = linux-nanoka
 	b2sums = SKIP
 	b2sums = ecd0a4058542a8cffa8d25407f2b7022f9f10693a9202383641cc7fd509ff5f1b8825b76814b2f2370297d3f0af20f25985e91d09f54c5900d3a77be72c80c33
 	b2sums = c992567bd7dd8553432be496ffa1c17e2f5ebe9c7edb51945cf977e1b742dd6517c210d8843bb82744ca705efd07f8027cd7dde41b50215ebd707a34aa81462e
-	b2sums = 88c799dae2ad506c7e653436f45171d20c1374b4bcdd7af55734ab900515ea359c2ef52a75e10151fe5502331c63f31b8eb1ce550e2001e73e0fabc8f9c0608a
 	b2sums = b0bb5f8a23765c73fb59febe23bf649fc10ad0cfc822ed8bcae0578915711ec24123bdca7d0c132a8196d679d350353cfad13d15b21dd9cf315c3cd074809646
 	b2sums = 43386fb36a975bd5215d477bd2e11d91adbdc20393b9898788ee5734834aaeb6af83e8e493a0d20f6bd7fd6ecbff124f7877ede44c3beafb007b9c7effa44fe6
 	b2sums = 8106fe252012ca17f32c56877a98e047befe15c71adc0e6c97927760e08bfe7f78a8b71721470564514328c470f26345ec81796bd9dedd47a6c330d57205fae8
@@ -93,13 +90,6 @@ pkgname = linux-nanoka-headers
 	provides = LINUX-HEADERS
 	provides = linux-cachyos-lto-headers=7.3.3-1
 	replaces = linux-cachyos-lto-headers
-
-pkgname = linux-nanoka-zfs
-	pkgdesc = zfs module for the Linux EEVDF + LTO + AutoFDO + Propeller Cachy Sauce Kernel by CachyOS with other patches and improvements. Build by Nanoka with love. kernel
-	license = CDDL
-	depends = pahole
-	depends = linux-nanoka=7.3.3-1
-	provides = ZFS-MODULE
 
 pkgname = linux-nanoka-nvidia-open
 	pkgdesc = nvidia open modules of 620.70.06 driver for the linux-nanoka kernel
