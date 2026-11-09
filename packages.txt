@@ -35,7 +35,7 @@ paru
 pdfcraft
 physlock
 picom-nhktmdzhg-git
-pvpn-go
+local:pvpn-go
 pwvucontrol
 rate-mirrors
 rhythmbox-plugin-tray-icon
@@ -65,4 +65,3 @@ xlibre-input-libinput
 local:linux-nanoka
 local:mcontrolcenter-git
 local:opendoas-cpp-git
-local:paru
