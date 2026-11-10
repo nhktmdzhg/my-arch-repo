@@ -35,7 +35,7 @@ paru
 pdfcraft
 physlock
 picom-nhktmdzhg-git
-local:pvpn-go
+pvpn-go
 pwvucontrol
 rate-mirrors
 rhythmbox-plugin-tray-icon
