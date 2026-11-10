@@ -41,6 +41,7 @@
 # Path to the list of used modules
 : "${_localmodcfg_path:="$XDG_DATA_HOME/modprobed-db/modprobed.db"}"
 
+
 # Use the current kernel's .config file
 # Enabling this option will use the .config of the RUNNING kernel rather than
 # the ARCH defaults. Useful when the package gets updated and you already went
@@ -55,7 +56,7 @@
 : "${_per_gov:=no}"
 
 ### Enable TCP_CONG_BBR3
-: "${_tcp_bbr3:=yes}"
+: "${_tcp_bbr3:=no}"
 
 ### Running with a 1000HZ, 750Hz, 600 Hz, 500Hz, 300Hz, 250Hz and 100Hz tick rate
 : "${_HZ_ticks:=1000}"
@@ -78,7 +79,7 @@
 # 'madvise' - madvise, prevent applications from allocating more memory resources than necessary
 # More infos here:
 # https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/performance_tuning_guide/sect-red_hat_enterprise_linux-performance_tuning_guide-configuring_transparent_huge_pages
-: "${_hugepage:=madvise}"
+: "${_hugepage:=always}"
 
 # CPU compiler optimizations - Defaults to native if left empty
 # - "native" (use compiler autodetection)
@@ -109,7 +110,7 @@
 # scheme used by CONFIG_CFI_CLANG. kCFI doesn't require LTO, doesn't
 # alter function references to point to a jump table, and won't break
 # function address equality.
-: "${_use_kcfi:=yes}"
+: "${_use_kcfi:=no}"
 
 # Build the zfs module in to the kernel
 # WARNING: The ZFS module doesn't build with selected RT sched due to licensing issues.
@@ -125,7 +126,6 @@
 # This does replace the requirement of nvidia-580xx-dkms
 # Use this for Maxwell, Pascal and Volta GPUs
 : "${_build_nvidia_580xx:=no}"
-
 
 # Builds the r8125 module and package it into its own package
 # Replaces requirement for r8125-dkms
@@ -265,13 +265,11 @@ if [ "$_build_nvidia_open" = "yes" ]; then
              "${_patchsource}/misc/nvidia/0004-Open-sysfs-config-from-the-userspace-root-on-7.3.patch")
 fi
 
-
 if [ "$_build_nvidia_580xx" = "yes" ]; then
     source+=("https://us.download.nvidia.com/XFree86/Linux-x86_64/${_nv_580xx_ver}/${_nv_580xx_pkg}.run"
              "${_patchsource}/misc/nvidia-580xx/0001-Enable-atomic-kernel-modesetting-by-default.patch"
              "${_patchsource}/misc/nvidia-580xx/0002-fix-hw-cursor-kde.patch")
 fi
-
 
 # Use generated AutoFDO Profile
 if [ "$_autofdo" = "yes" ] && [ -n "$_autofdo_profile_name" ]; then
@@ -569,7 +567,6 @@ _sign_modules() {
 
 build() {
     cd "$_srcname"
-
     make "${BUILD_FLAGS[@]}" -j"$(nproc)" all
 
     if ! _is_ci_build; then
@@ -593,7 +590,6 @@ build() {
         cd "${srcdir}/${_nv_580xx_pkg}/kernel"
         CFLAGS= CXXFLAGS= LDFLAGS= make "${BUILD_FLAGS[@]}" "${MODULE_FLAGS[@]}" -j"$(nproc)" modules
     fi
-
 
     if [ "$_build_zfs" = "yes" ]; then
         cd ${srcdir}/"zfs"
@@ -734,7 +730,6 @@ _package-headers() {
         done < <(find rust -type f -name 'generated_*.rs' -print0)
     fi
 
-
     echo "Installing unstripped VDSO..."
     make INSTALL_MOD_PATH="$pkgdir/usr" vdso_install \
       link=  # Suppress build-id symlinks
@@ -844,7 +839,6 @@ _package-nvidia-580xx(){
     find "$pkgdir" -name '*.ko' -exec zstd --rm -19 -T0 {} +
 }
 
-
 _package-r8125() {
     pkgdesc="r8125 modules for the $pkgbase kernel"
     depends=("$pkgbase=$_kernver")
@@ -878,7 +872,6 @@ for _p in "${pkgname[@]}"; do
     _package${_p#$pkgbase}
     }"
 done
-
 
 b2sums=('15dfdf1513a06b087a9f8b9fee00a1e48fa95ee80caefc55d646a14cab1d0050a7c0c0209164fa42d79d3281143e559b148bc7c623a85328d3dd70aa01579c90'
         'SKIP'
