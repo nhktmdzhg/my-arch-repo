@@ -1,6 +1,6 @@
 pkgbase = linux-nanoka
 	pkgdesc = Linux EEVDF + LTO + AutoFDO + Propeller Cachy Sauce Kernel by CachyOS with other patches and improvements. Build by Nanoka with love.
-	pkgver = 7.3.3
+	pkgver = 7.3.4
 	pkgrel = 1
 	url = https://github.com/CachyOS/linux-cachyos
 	arch = x86_64
@@ -31,8 +31,8 @@ pkgbase = linux-nanoka
 	options = !strip
 	options = !debug
 	options = !lto
-	source = https://github.com/CachyOS/linux/releases/download/cachyos-7.3.3-1/cachyos-7.3.3-1.tar.gz
-	source = https://github.com/CachyOS/linux/releases/download/cachyos-7.3.3-1/cachyos-7.3.3-1.tar.gz.asc
+	source = https://github.com/CachyOS/linux/releases/download/cachyos-7.3.4-1/cachyos-7.3.4-1.tar.gz
+	source = https://github.com/CachyOS/linux/releases/download/cachyos-7.3.4-1/cachyos-7.3.4-1.tar.gz.asc
 	source = config
 	source = https://raw.githubusercontent.com/cachyos/kernel-patches/master/7.3/misc/dkms-clang.patch
 	source = https://download.nvidia.com/XFree86/NVIDIA-kernel-module-source/NVIDIA-kernel-module-source-620.70.06.tar.xz
@@ -42,7 +42,7 @@ pkgbase = linux-nanoka
 	source = git+https://github.com/aravance/r8125.git
 	validpgpkeys = E18447AC260021D31F3FF6C4C8A2A4774B8B63C4
 	validpgpkeys = E8B9AA39F054E30E8290D492C3C4820857F654FE
-	b2sums = 15dfdf1513a06b087a9f8b9fee00a1e48fa95ee80caefc55d646a14cab1d0050a7c0c0209164fa42d79d3281143e559b148bc7c623a85328d3dd70aa01579c90
+	b2sums = 438505cf485af55d63f82675df5d57c8f584abad72c1aacf5e126e8cdc5b2a0153e05ec017769aaf70fc081e3969ba3e83760556a6d53d3f7a0641961c71cce2
 	b2sums = SKIP
 	b2sums = ecd0a4058542a8cffa8d25407f2b7022f9f10693a9202383641cc7fd509ff5f1b8825b76814b2f2370297d3f0af20f25985e91d09f54c5900d3a77be72c80c33
 	b2sums = c992567bd7dd8553432be496ffa1c17e2f5ebe9c7edb51945cf977e1b742dd6517c210d8843bb82744ca705efd07f8027cd7dde41b50215ebd707a34aa81462e
@@ -68,7 +68,7 @@ pkgname = linux-nanoka
 	provides = NTSYNC-MODULE
 	provides = VHBA-MODULE
 	provides = ADIOS-MODULE
-	provides = linux-cachyos-lto=7.3.3-1
+	provides = linux-cachyos-lto=7.3.4-1
 	replaces = linux-cachyos-lto
 
 pkgname = linux-nanoka-headers
@@ -88,13 +88,13 @@ pkgname = linux-nanoka-headers
 	depends = lld
 	depends = pahole>=1:1.32-2
 	provides = LINUX-HEADERS
-	provides = linux-cachyos-lto-headers=7.3.3-1
+	provides = linux-cachyos-lto-headers=7.3.4-1
 	replaces = linux-cachyos-lto-headers
 
 pkgname = linux-nanoka-nvidia-open
 	pkgdesc = nvidia open modules of 620.70.06 driver for the linux-nanoka kernel
 	license = MIT AND GPL-2.0-only
-	depends = linux-nanoka=7.3.3-1
+	depends = linux-nanoka=7.3.4-1
 	depends = nvidia-utils=620.70.06
 	depends = libglvnd
 	provides = NVIDIA-MODULE
@@ -104,4 +104,4 @@ pkgname = linux-nanoka-nvidia-open
 pkgname = linux-nanoka-r8125
 	pkgdesc = r8125 modules for the linux-nanoka kernel
 	license = GPL-2.0-only
-	depends = linux-nanoka=7.3.3-1
+	depends = linux-nanoka=7.3.4-1
