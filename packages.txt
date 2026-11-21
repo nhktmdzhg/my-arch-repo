@@ -10,6 +10,7 @@ catppuccin-whiskers-bin
 coccoc-browser-stable
 deckcraft
 electron22-bin
+elyprismlauncher
 equicord-openasar
 fcitx5-lotus-git
 filmcraft
