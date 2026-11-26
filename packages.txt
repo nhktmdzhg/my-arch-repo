@@ -51,7 +51,6 @@ ttf-vietnamese-tcvn3
 ttf-vietnamese-vni
 ventoy
 vscodium
-webcord-equicord-git
 wordcraft
 xclicker
 xmousepasteblock
