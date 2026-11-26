@@ -38,6 +38,7 @@ physlock
 picom-nhktmdzhg-git
 pvpn-go
 pwvucontrol
+pyrefly
 rate-mirrors
 rhythmbox-plugin-tray-icon
 ripdrag
