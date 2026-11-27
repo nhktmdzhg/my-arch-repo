@@ -1,0 +1,18 @@
+#!/bin/sh
+
+XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+
+if [ -f "$XDG_CONFIG_HOME/equibop-flags.conf" ]; then
+    EQUIBOP_USER_FLAGS="$(grep -v '^#' "$XDG_CONFIG_HOME/equibop-flags.conf")"
+fi
+
+case " $* " in
+    *" --wayland "*)
+        if [ "$XDG_SESSION_TYPE" = "wayland" ]; then
+            echo "Forcing Wayland"
+            EQUIBOP_USER_FLAGS="$EQUIBOP_USER_FLAGS --enable-features=UseOzonePlatform,WaylandWindowDecorations,VaapiVideoDecodeLinuxGL --ozone-platform=wayland"
+        fi
+        ;;
+esac
+
+exec /usr/lib/equibop/equibop $EQUIBOP_USER_FLAGS "$@"
