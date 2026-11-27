@@ -11,6 +11,7 @@ coccoc-browser-stable
 deckcraft
 electron22-bin
 elyprismlauncher
+equibop
 equicord-openasar
 fcitx5-lotus-git
 filmcraft
